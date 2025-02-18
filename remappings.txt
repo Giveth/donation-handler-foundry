@@ -3,3 +3,6 @@ halmos-cheatcodes=node_modules/halmos-cheatcodes
 
 contracts/=src/contracts
 interfaces/=src/interfaces
+
+@openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
