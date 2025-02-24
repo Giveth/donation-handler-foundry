@@ -51,7 +51,11 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param recipientAddresses The addresses of the recipients of the donation
   /// @param amounts The amounts of the donation to each recipient
   /// @param data The data of the donation to each recipient
-  modifier validateInputLengths(address[] calldata recipientAddresses, uint256[] calldata amounts, bytes[] calldata data) {
+  modifier validateInputLengths(
+    address[] calldata recipientAddresses,
+    uint256[] calldata amounts,
+    bytes[] calldata data
+  ) {
     if (recipientAddresses.length != data.length || recipientAddresses.length != amounts.length) {
       revert InvalidInput();
     }
@@ -76,25 +80,23 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param recipientAddresses The addresses of the recipients of the donation
   /// @param amounts The amounts of the donation to each recipient
   /// @param data The data of the donation to each recipient
+
   function donateManyETH(
     uint256 totalAmount,
     address[] calldata recipientAddresses,
     uint256[] calldata amounts,
     bytes[] calldata data
-  )
-    external
-    payable
-    nonReentrant
-    validateInputLengths(recipientAddresses, amounts, data)
-  {
+  ) external payable nonReentrant validateInputLengths(recipientAddresses, amounts, data) {
     Allocations memory allocations = Allocations(ETH_TOKEN_ADDRESS, totalAmount, recipientAddresses, amounts, data);
     require(allocations.tokenAddress == ETH_TOKEN_ADDRESS, 'Invalid token address for ETH');
     require(msg.value == allocations.totalAmount, 'Incorrect ETH amount sent');
 
-    uint256 length = allocations.recipientAddresses.length;
+    uint256 length = recipientAddresses.length;
     for (uint256 i = 0; i < length;) {
       _handleETH(allocations.amounts[i], allocations.recipientAddresses[i], allocations.data[i]);
-      unchecked { ++i; }
+      unchecked {
+        ++i;
+      }
     }
   }
 
@@ -121,16 +123,23 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     address[] calldata recipientAddresses,
     uint256[] calldata amounts,
     bytes[] calldata data
-  ) external nonReentrant validateInputLengths(recipientAddresses, amounts, data) checkERC20Allowance(tokenAddress, totalAmount, msg.sender) {
+  )
+    external
+    nonReentrant
+    validateInputLengths(recipientAddresses, amounts, data)
+    checkERC20Allowance(tokenAddress, totalAmount, msg.sender)
+  {
     Allocations memory allocations = Allocations(tokenAddress, totalAmount, recipientAddresses, amounts, data);
     require(allocations.tokenAddress != ETH_TOKEN_ADDRESS, 'Invalid token address');
 
-    uint256 length = allocations.recipientAddresses.length;
+    uint256 length = recipientAddresses.length;
     for (uint256 i = 0; i < length;) {
       _handleERC20(
         allocations.tokenAddress, allocations.amounts[i], allocations.recipientAddresses[i], allocations.data[i]
       );
-      unchecked { ++i; }
+      unchecked {
+        ++i;
+      }
     }
   }
 
@@ -140,7 +149,12 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param recipientAddress The address of the recipient of the donation
   /// @param amount The amount of the donation
   /// @param data The data of the donation
-  function donateERC20(address tokenAddress, address recipientAddress, uint256 amount, bytes calldata data) external nonReentrant checkERC20Allowance(tokenAddress, amount, msg.sender) {
+  function donateERC20(
+    address tokenAddress,
+    address recipientAddress,
+    uint256 amount,
+    bytes calldata data
+  ) external nonReentrant checkERC20Allowance(tokenAddress, amount, msg.sender) {
     require(tokenAddress != ETH_TOKEN_ADDRESS, 'Invalid token address');
     _handleERC20(tokenAddress, amount, recipientAddress, data);
   }
@@ -150,8 +164,7 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param amount The amount of the donation
   /// @param recipientAddress The address of the recipient of the donation
   function _handleETH(uint256 amount, address recipientAddress, bytes memory) internal {
-    
-    // Interactions 
+    // Interactions
     (bool success,) = recipientAddress.call{value: amount}('');
     require(success, 'ETH transfer failed');
     // Effects
@@ -176,5 +189,4 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     // Only accept ETH through allocateETH function
     revert('Use allocateETH function to send ETH');
   }
-
 }
