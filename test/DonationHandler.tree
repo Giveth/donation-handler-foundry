@@ -1,0 +1,29 @@
+DonationHandler
+├── When initializing the contract
+│   ├── It should initialize with correct owner
+│   └── It should not be able to initialize twice
+├── When making ETH donations
+│   ├── When making a single ETH donation
+│   │   ├── It should successfully donate ETH to a recipient
+│   │   ├── It should emit DonationMade event
+│   │   └── It should revert if ETH transfer fails
+│   └── When making multiple ETH donations
+│       ├── It should successfully donate ETH to multiple recipients
+│       ├── It should emit DonationMade events for each recipient
+│       ├── It should revert if total amount doesn't match msg.value
+│       └── It should revert if input arrays have different lengths
+├── When making ERC20 donations
+│   ├── When making a single ERC20 donation
+│   │   ├── It should successfully transfer ERC20 tokens to recipient
+│   │   ├── It should emit DonationMade event
+│   │   ├── It should revert if token address is zero
+│   │   ├── It should revert if recipient address is zero
+│   │   ├── It should revert if amount is zero
+│   │   └── It should revert if allowance is insufficient
+│   └── When making multiple ERC20 donations
+│       ├── It should successfully transfer ERC20 tokens to multiple recipients
+│       ├── It should emit DonationMade events for each recipient
+│       ├── It should revert if input arrays have different lengths
+│       └── It should revert if allowance is insufficient
+└── When receiving direct ETH transfers
+    └── It should revert

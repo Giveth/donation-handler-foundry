@@ -1,3 +1,103 @@
+# DonationHandler Smart Contract
+
+A flexible and secure smart contract system for handling both ETH and ERC20 token donations with support for single and batch transactions.
+
+## Overview
+
+The DonationHandler is an upgradeable smart contract that facilitates donations in both ETH and ERC20 tokens. It supports single donations as well as batch donations to multiple recipients, with optional data attachments for each transaction.
+
+### Key Features
+
+- **Multiple Asset Support**: Handle both ETH and ERC20 token donations
+- **Batch Processing**: Efficiently process multiple donations in a single transaction
+- **Upgradeable**: Uses OpenZeppelin's upgradeable contract pattern
+- **Security Features**: 
+  - Reentrancy protection
+  - Input validation
+  - Ownership controls
+  - Custom error handling
+
+### Core Functionality
+
+1. **ETH Donations**
+   - Single ETH donations via `donateETH()`
+   - Batch ETH donations via `donateManyETH()`
+   - Direct ETH transfers are prevented
+
+2. **ERC20 Donations**
+   - Single token donations via `donateERC20()`
+   - Batch token donations via `donateManyERC20()`
+   - Automatic allowance checking
+
+### Security Measures
+
+- ReentrancyGuard implementation
+- Input validation for array lengths
+- Zero address checks
+- Amount validation
+- ERC20 allowance verification
+- Custom error handling for better gas efficiency
+
+### Testing Coverage
+
+The contract includes comprehensive test coverage for:
+- Single ETH donations
+- Multiple ETH donations
+- Single ERC20 token donations
+- Multiple ERC20 token donations
+- Error cases and edge conditions
+- Direct ETH transfer prevention
+
+### Events
+
+```solidity
+event DonationMade(
+    address indexed recipientAddress,
+    uint256 amount,
+    address indexed tokenAddress,
+    bytes data
+);
+```
+
+### Custom Errors
+
+```solidity
+error InvalidInput();
+error InsufficientAllowance();
+```
+
+## Usage Examples
+
+### Making a Single ETH Donation
+```solidity
+// Donate 1 ETH to a recipient
+donationHandler.donateETH{value: 1 ether}(
+    recipientAddress,
+    1 ether,
+    "0x" // Optional data
+);
+```
+
+### Making Multiple ERC20 Donations
+```solidity
+// Batch donate tokens to multiple recipients
+donationHandler.donateManyERC20(
+    tokenAddress,
+    totalAmount,
+    recipientAddresses,
+    amounts,
+    data
+);
+```
+
+## Technical Requirements
+
+- Solidity ^0.8.0
+- OpenZeppelin Contracts (Upgradeable)
+- Foundry for testing and deployment
+
+---
+
 <img src="https://raw.githubusercontent.com/defi-wonderland/brand/v1.0.0/external/solidity-foundry-boilerplate-banner.png" alt="wonderland banner" align="center" />
 <br />
 

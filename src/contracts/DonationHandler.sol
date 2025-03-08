@@ -14,7 +14,8 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param recipientAddress The address of the recipient of the donation
   /// @param amount The amount of the donation
   /// @param tokenAddress The address of the token being donated
-  event DonationMade(address indexed recipientAddress, uint256 amount, address indexed tokenAddress);
+  /// @param data The data of the donation, including projectId
+  event DonationMade(address indexed recipientAddress, uint256 amount, address indexed tokenAddress, bytes data);
 
   // Custom errors
   /// @notice Error emitted when the input is invalid
@@ -67,6 +68,7 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param requiredAmount The required amount of the allowance
   /// @param owner The owner of the token
   modifier checkERC20Allowance(address tokenAddress, uint256 requiredAmount, address owner) {
+    require(tokenAddress != ETH_TOKEN_ADDRESS, 'Invalid token address');
     uint256 allowance = IERC20(tokenAddress).allowance(owner, address(this));
     if (allowance < requiredAmount) {
       revert InsufficientAllowance();
@@ -106,6 +108,7 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param amount The amount of the donation
   /// @param data The data of the donation
   function donateETH(address recipientAddress, uint256 amount, bytes calldata data) external payable nonReentrant {
+    require(msg.value == amount, 'Incorrect ETH amount sent');
     _handleETH(amount, recipientAddress, data);
   }
 
@@ -155,7 +158,6 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     uint256 amount,
     bytes calldata data
   ) external nonReentrant checkERC20Allowance(tokenAddress, amount, msg.sender) {
-    require(tokenAddress != ETH_TOKEN_ADDRESS, 'Invalid token address');
     _handleERC20(tokenAddress, amount, recipientAddress, data);
   }
 
@@ -163,25 +165,28 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @notice Handle a single ETH donation
   /// @param amount The amount of the donation
   /// @param recipientAddress The address of the recipient of the donation
-  function _handleETH(uint256 amount, address recipientAddress, bytes memory) internal {
+  function _handleETH(uint256 amount, address recipientAddress, bytes memory data) internal {
     // Interactions
+
+    if (recipientAddress == ETH_TOKEN_ADDRESS) revert InvalidInput();
+    if (amount == 0) revert InvalidInput();
     (bool success,) = recipientAddress.call{value: amount}('');
     require(success, 'ETH transfer failed');
     // Effects
-    emit DonationMade(recipientAddress, amount, ETH_TOKEN_ADDRESS);
+    emit DonationMade(recipientAddress, amount, ETH_TOKEN_ADDRESS, data);
   }
 
   /// @notice Handle a single ERC20 donation
   /// @param token The address of the token being donated
   /// @param amount The amount of the donation
   /// @param recipientAddress The address of the recipient of the donation
-  function _handleERC20(address token, uint256 amount, address recipientAddress, bytes memory) internal {
+  function _handleERC20(address token, uint256 amount, address recipientAddress, bytes memory data) internal {
     if (token == address(0) || recipientAddress == address(0)) revert InvalidInput();
     if (amount == 0) revert InvalidInput();
     bool success = IERC20(token).transferFrom(msg.sender, recipientAddress, amount);
     require(success, 'ERC20 transfer failed');
 
-    emit DonationMade(recipientAddress, amount, token);
+    emit DonationMade(recipientAddress, amount, token, data);
   }
 
   // Receive function to accept ETH
