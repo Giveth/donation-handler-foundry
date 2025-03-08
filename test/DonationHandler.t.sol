@@ -14,6 +14,16 @@ contract MockERC20 is ERC20 {
   }
 }
 
+contract FailingMockERC20 is ERC20 {
+  constructor() ERC20('FailingToken', 'FAIL') {
+    _mint(msg.sender, 1_000_000 * 10 ** 18);
+  }
+
+  function transferFrom(address, address, uint256) public pure override returns (bool) {
+    return false;
+  }
+}
+
 contract DonationHandlerTest is Test {
   DonationHandler public donationHandler;
   MockERC20 public mockToken;
@@ -26,7 +36,9 @@ contract DonationHandlerTest is Test {
   uint256 public constant INITIAL_BALANCE = 100 ether;
   uint256 public constant INITIAL_TOKEN_BALANCE = 1_000_000 * 10 ** 18;
 
-  event DonationMade(address indexed recipientAddress, uint256 amount, address indexed tokenAddress);
+  event DonationMade(address indexed recipientAddress, uint256 amount, address indexed tokenAddress, bytes data);
+
+  error InvalidInitialization();
 
   function setUp() public {
     // Deploy contracts
@@ -35,7 +47,6 @@ contract DonationHandlerTest is Test {
       payable(address(new ERC1967Proxy(address(donationHandler), abi.encodeCall(DonationHandler.initialize, ()))))
     );
     mockToken = new MockERC20();
-
     // accounts
     owner = address(this);
     recipient1 = makeAddr('recipient1');
@@ -47,6 +58,13 @@ contract DonationHandlerTest is Test {
 
     // Approve tokens in the contract
     mockToken.approve(address(donationHandler), type(uint256).max);
+
+    vm.label(address(donationHandler), 'DonationHandler');
+    vm.label(address(mockToken), 'MockToken');
+    vm.label(owner, 'owner');
+    vm.label(recipient1, 'recipient1');
+    vm.label(recipient2, 'recipient2');
+    vm.label(recipient3, 'recipient3');
   }
 
   // Helper functions
@@ -73,16 +91,19 @@ contract DonationHandlerTest is Test {
 
   function _expectDonationEvent(address recipient, uint256 amount, address token) internal {
     vm.expectEmit(true, true, false, true);
-    emit DonationMade(recipient, amount, token);
+    emit DonationMade(recipient, amount, token, '');
   }
 
   // Helper function => recipient that reverts on ETH receive
   function _deployRevertingRecipient() internal returns (address) {
-    bytes memory bytecode = hex'60806040523415600e57600080fd5b600080fdfe';
+    // This bytecode creates a contract that exists and has a fallback function that reverts
+    bytes memory bytecode =
+      hex'6080604052348015600f57600080fd5b5060868061001e6000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063600560001460375763600560001460375760285760003560e01c8063600560001460375763600560001460375b600080fd5b348015604257600080fd5b50600080fd';
     address recipient;
     assembly {
       recipient := create(0, add(bytecode, 0x20), mload(bytecode))
     }
+    require(recipient != address(0), 'Failed to deploy reverting recipient');
     return recipient;
   }
 
@@ -110,8 +131,8 @@ contract DonationHandlerTest is Test {
       donationAmount,
       'Recipient balance should increase by donation amount'
     );
-    // Test revert when sending incorrect amount
-    vm.expectRevert('ETH transfer failed');
+
+    vm.expectRevert('Incorrect ETH amount sent');
     donationHandler.donateETH{value: donationAmount - 0.1 ether}(recipient1, donationAmount, data);
   }
 
@@ -160,14 +181,14 @@ contract DonationHandlerTest is Test {
       'Recipient token balance should increase by donation amount'
     );
 
-    // TODO FIX REVERTS WITH CUSTOM ERRORS
-    vm.expectRevert();
+    // expect revert when calling donate ERC20 with native token address
+    vm.expectRevert('Invalid token address');
     donationHandler.donateERC20(address(0), recipient1, donationAmount, data);
-
-    vm.expectRevert();
+    // expect revert when calling donateERC20 with null recipient address
+    vm.expectRevert(DonationHandler.InvalidInput.selector);
     donationHandler.donateERC20(address(mockToken), address(0), donationAmount, data);
-
-    vm.expectRevert();
+    // expect revert when calling donateERC20 with 0 amount
+    vm.expectRevert(DonationHandler.InvalidInput.selector);
     donationHandler.donateERC20(address(mockToken), recipient1, 0, data);
 
     // Test insufficient allowance
@@ -213,5 +234,116 @@ contract DonationHandlerTest is Test {
     vm.deal(address(this), 1 ether);
     vm.expectRevert();
     payable(address(donationHandler)).transfer(1 ether);
+  }
+
+  function test_RevertWhen_DonatingZeroETH() external whenMakingETHDonations {
+    bytes memory data = '';
+    vm.expectRevert(DonationHandler.InvalidInput.selector);
+    donationHandler.donateETH{value: 0}(recipient1, 0, data);
+  }
+
+  function test_RevertWhen_DonatingETHToZeroAddress() external whenMakingETHDonations {
+    bytes memory data = '';
+    uint256 amount = 1 ether;
+    vm.expectRevert(DonationHandler.InvalidInput.selector);
+    donationHandler.donateETH{value: amount}(address(0), amount, data);
+  }
+
+  function test_RevertWhen_ETHValueMismatch() external whenMakingETHDonations {
+    bytes memory data = '';
+    uint256 amount = 1 ether;
+    vm.expectRevert('Incorrect ETH amount sent');
+    donationHandler.donateETH{value: 2 ether}(recipient1, amount, data);
+  }
+
+  function test_RevertWhen_ERC20TransferFails() external {
+    FailingMockERC20 failingToken = new FailingMockERC20();
+    bytes memory data = '';
+    uint256 amount = 100 * 10 ** 18;
+    failingToken.approve(address(donationHandler), amount);
+
+    vm.expectRevert('ERC20 transfer failed');
+    donationHandler.donateERC20(address(failingToken), recipient1, amount, data);
+  }
+
+  function test_RevertWhen_InitializingTwice() external {
+    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    donationHandler.initialize();
+  }
+
+  function test_OwnershipTransfer() external {
+    address newOwner = makeAddr('newOwner');
+    donationHandler.transferOwnership(newOwner);
+    assertEq(donationHandler.owner(), newOwner);
+  }
+
+  function test_RevertWhen_SingleETHTransferFails() external whenMakingETHDonations {
+    // Deploy a contract that rejects ETH transfers
+    address revertingRecipient = _deployRevertingRecipient();
+    uint256 amount = 1 ether;
+    bytes memory data = '';
+
+    // Should revert when trying to send ETH to a contract that rejects it
+    vm.expectRevert('ETH transfer failed');
+    donationHandler.donateETH{value: amount}(revertingRecipient, amount, data);
+  }
+
+  function test_RevertWhen_MultipleETHTransferFailsOnOneRecipient() external whenMakingETHDonations {
+    // Setup regular recipients and a reverting one
+    address[] memory recipients = new address[](3);
+    recipients[0] = recipient1;
+    recipients[1] = _deployRevertingRecipient(); // This one will fail
+    recipients[2] = recipient3;
+
+    uint256[] memory amounts = new uint256[](3);
+    amounts[0] = 1 ether;
+    amounts[1] = 2 ether;
+    amounts[2] = 3 ether;
+
+    bytes[] memory data = new bytes[](3);
+    data[0] = '';
+    data[1] = '';
+    data[2] = '';
+
+    uint256 totalAmount = amounts[0] + amounts[1] + amounts[2];
+
+    // Record initial balances to verify state is unchanged after revert
+    uint256[] memory initialBalances = new uint256[](3);
+    for (uint256 i = 0; i < recipients.length; i++) {
+      initialBalances[i] = recipients[i].balance;
+    }
+
+    // Should revert when trying to send ETH to the reverting contract
+    vm.expectRevert('ETH transfer failed');
+    donationHandler.donateManyETH{value: totalAmount}(totalAmount, recipients, amounts, data);
+
+    // Verify no balances changed (transaction was reverted)
+    for (uint256 i = 0; i < recipients.length; i++) {
+      assertEq(recipients[i].balance, initialBalances[i], 'Recipient balance should remain unchanged after revert');
+    }
+  }
+
+  function test_RevertWhen_MultipleETHTransfersFailOnAllRecipients() external whenMakingETHDonations {
+    // Setup all recipients as reverting contracts
+    address[] memory recipients = new address[](3);
+    recipients[0] = _deployRevertingRecipient();
+    recipients[1] = _deployRevertingRecipient();
+    recipients[2] = _deployRevertingRecipient();
+
+    uint256[] memory amounts = new uint256[](3);
+    amounts[0] = 1 ether;
+    amounts[1] = 2 ether;
+    amounts[2] = 3 ether;
+
+    bytes[] memory data = new bytes[](3);
+    data[0] = '';
+    data[1] = '';
+    data[2] = '';
+
+    uint256 totalAmount = amounts[0] + amounts[1] + amounts[2];
+
+    // Should revert on the first transfer attempt
+    vm.expectRevert('ETH transfer failed');
+    donationHandler.donateManyETH{value: totalAmount}(totalAmount, recipients, amounts, data);
   }
 }
