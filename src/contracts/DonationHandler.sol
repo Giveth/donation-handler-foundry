@@ -73,14 +73,12 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
       revert InsufficientAllowance();
     }
   }
-  // ETH Donations
-  // Donate multiple ETH donations at once
+
   /// @notice Donate multiple ETH donations at once
   /// @param totalAmount The total amount of the donation
   /// @param recipientAddresses The addresses of the recipients of the donation
   /// @param amounts The amounts of the donation to each recipient
   /// @param data The data of the donation to each recipient
-
   function donateManyETH(
     uint256 totalAmount,
     address[] calldata recipientAddresses,
@@ -100,7 +98,6 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
   }
 
-  // Donate a single ETH donation
   /// @notice Donate a single ETH donation
   /// @param recipientAddress The address of the recipient of the donation
   /// @param amount The amount of the donation
@@ -110,7 +107,6 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     _handleETH(amount, recipientAddress, data);
   }
 
-  // Donate a single ERC20 donation
   /// @notice Donate a single ERC20 donation
   /// @param tokenAddress The address of the token being donated
   /// @param recipientAddress The address of the recipient of the donation
@@ -126,8 +122,6 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     _handleERC20(tokenAddress, amount, recipientAddress, data);
   }
 
-  // ERC20 Donations
-  // Donate multiple ERC20 donations at once
   /// @notice Donate multiple ERC20 donations at once
   /// @param tokenAddress The address of the token being donated
   /// @param totalAmount The total amount of the donation
@@ -155,13 +149,12 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
       }
     }
   }
-  // Donate multiple ERC20 & ETH donations at once
+
   /// @notice Donate multiple ERC20 & ETH donations at once
   /// @param tokenAddresses The addresses of the tokens being donated
   /// @param amounts The amounts of the donation to each recipient
   /// @param recipientAddresses The addresses of the recipients of the donation
   /// @param data The data of the donation to each recipient
-
   function donateManyMultipleTokens(
     address[] calldata tokenAddresses,
     uint256[] calldata amounts,
@@ -201,18 +194,14 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     }
   }
 
-  // Internal functions
   /// @notice Handle a single ETH donation
   /// @param amount The amount of the donation
   /// @param recipientAddress The address of the recipient of the donation
   function _handleETH(uint256 amount, address recipientAddress, bytes memory data) internal {
-    // Interactions
-
     if (recipientAddress == ETH_TOKEN_ADDRESS) revert InvalidInput();
     if (amount == 0) revert InvalidInput();
     (bool success,) = recipientAddress.call{value: amount}('');
     require(success, 'ETH transfer failed');
-    // Effects
     emit DonationMade(recipientAddress, amount, ETH_TOKEN_ADDRESS, data);
   }
 
@@ -225,13 +214,10 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     if (amount == 0) revert InvalidInput();
     bool success = IERC20(token).transferFrom(msg.sender, recipientAddress, amount);
     require(success, 'ERC20 transfer failed');
-
     emit DonationMade(recipientAddress, amount, token, data);
   }
 
-  // Receive function to accept ETH
   receive() external payable {
-    // Only accept ETH through allocateETH function
     revert('Use allocateETH function to send ETH');
   }
 }
