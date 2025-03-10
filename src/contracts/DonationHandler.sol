@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
@@ -67,13 +66,12 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param tokenAddress The address of the token being donated
   /// @param requiredAmount The required amount of the allowance
   /// @param owner The owner of the token
-  modifier checkERC20Allowance(address tokenAddress, uint256 requiredAmount, address owner) {
+  function _checkERC20Allowance(address tokenAddress, uint256 requiredAmount, address owner) internal view {
     require(tokenAddress != ETH_TOKEN_ADDRESS, 'Invalid token address');
     uint256 allowance = IERC20(tokenAddress).allowance(owner, address(this));
     if (allowance < requiredAmount) {
       revert InsufficientAllowance();
     }
-    _;
   }
   // ETH Donations
   // Donate multiple ETH donations at once
@@ -112,6 +110,22 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     _handleETH(amount, recipientAddress, data);
   }
 
+  // Donate a single ERC20 donation
+  /// @notice Donate a single ERC20 donation
+  /// @param tokenAddress The address of the token being donated
+  /// @param recipientAddress The address of the recipient of the donation
+  /// @param amount The amount of the donation
+  /// @param data The data of the donation
+  function donateERC20(
+    address tokenAddress,
+    address recipientAddress,
+    uint256 amount,
+    bytes calldata data
+  ) external nonReentrant {
+    _checkERC20Allowance(tokenAddress, amount, msg.sender);
+    _handleERC20(tokenAddress, amount, recipientAddress, data);
+  }
+
   // ERC20 Donations
   // Donate multiple ERC20 donations at once
   /// @notice Donate multiple ERC20 donations at once
@@ -126,12 +140,8 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     address[] calldata recipientAddresses,
     uint256[] calldata amounts,
     bytes[] calldata data
-  )
-    external
-    nonReentrant
-    validateInputLengths(recipientAddresses, amounts, data)
-    checkERC20Allowance(tokenAddress, totalAmount, msg.sender)
-  {
+  ) external nonReentrant validateInputLengths(recipientAddresses, amounts, data) {
+    _checkERC20Allowance(tokenAddress, totalAmount, msg.sender);
     Allocations memory allocations = Allocations(tokenAddress, totalAmount, recipientAddresses, amounts, data);
     require(allocations.tokenAddress != ETH_TOKEN_ADDRESS, 'Invalid token address');
 
@@ -145,20 +155,50 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
       }
     }
   }
+  // Donate multiple ERC20 & ETH donations at once
+  /// @notice Donate multiple ERC20 & ETH donations at once
+  /// @param tokenAddresses The addresses of the tokens being donated
+  /// @param amounts The amounts of the donation to each recipient
+  /// @param recipientAddresses The addresses of the recipients of the donation
+  /// @param data The data of the donation to each recipient
 
-  // Donate a single ERC20 donation
-  /// @notice Donate a single ERC20 donation
-  /// @param tokenAddress The address of the token being donated
-  /// @param recipientAddress The address of the recipient of the donation
-  /// @param amount The amount of the donation
-  /// @param data The data of the donation
-  function donateERC20(
-    address tokenAddress,
-    address recipientAddress,
-    uint256 amount,
-    bytes calldata data
-  ) external nonReentrant checkERC20Allowance(tokenAddress, amount, msg.sender) {
-    _handleERC20(tokenAddress, amount, recipientAddress, data);
+  function donateManyMultipleTokens(
+    address[] calldata tokenAddresses,
+    uint256[] calldata amounts,
+    address[] calldata recipientAddresses,
+    bytes[] calldata data
+  ) external payable nonReentrant validateInputLengths(recipientAddresses, amounts, data) {
+    uint256 len = recipientAddresses.length;
+    if (len != tokenAddresses.length) revert InvalidInput();
+    uint256 totalETHNeeded = 0;
+
+    for (uint256 i = 0; i < len;) {
+      if (tokenAddresses[i] == ETH_TOKEN_ADDRESS) {
+        totalETHNeeded += amounts[i];
+      }
+      unchecked {
+        ++i;
+      }
+    }
+
+    require(msg.value == totalETHNeeded, 'Incorrect ETH amount sent');
+
+    for (uint256 i = 0; i < len;) {
+      address token = tokenAddresses[i];
+      uint256 amount = amounts[i];
+      address recipient = recipientAddresses[i];
+      bytes memory donationData = data[i];
+
+      if (token == ETH_TOKEN_ADDRESS) {
+        _handleETH(amount, recipient, donationData);
+      } else {
+        _checkERC20Allowance(token, amount, msg.sender);
+        _handleERC20(token, amount, recipient, donationData);
+      }
+      unchecked {
+        ++i;
+      }
+    }
   }
 
   // Internal functions
