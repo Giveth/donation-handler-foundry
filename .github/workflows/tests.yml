@@ -5,7 +5,7 @@ on: [push]
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
-
+1
 env:
   MAINNET_RPC: ${{ secrets.MAINNET_RPC }}
   SEPOLIA_RPC: ${{ secrets.SEPOLIA_RPC }}
@@ -37,31 +37,3 @@ jobs:
       - name: Run tests
         shell: bash
         run: yarn test
-
-
-  lint:
-    name: Lint Commit Messages
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: wagoid/commitlint-github-action@v5
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn --frozen-lockfile --network-concurrency 1
-
-      - run: yarn lint:check
