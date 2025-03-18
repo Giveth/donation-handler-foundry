@@ -5,7 +5,6 @@ on: [push]
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
-1
 env:
   MAINNET_RPC: ${{ secrets.MAINNET_RPC }}
   SEPOLIA_RPC: ${{ secrets.SEPOLIA_RPC }}
