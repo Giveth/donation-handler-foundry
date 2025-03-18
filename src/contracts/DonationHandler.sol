@@ -73,6 +73,15 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
       revert InsufficientAllowance();
     }
   }
+  /// @notice Donate a single ETH donation
+  /// @param recipientAddress The address of the recipient of the donation
+  /// @param amount The amount of the donation
+  /// @param data The data of the donation
+
+  function donateETH(address recipientAddress, uint256 amount, bytes calldata data) external payable nonReentrant {
+    require(msg.value == amount, 'Incorrect ETH amount sent');
+    _handleETH(amount, recipientAddress, data);
+  }
 
   /// @notice Donate multiple ETH donations at once
   /// @param totalAmount The total amount of the donation
@@ -96,15 +105,6 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         ++i;
       }
     }
-  }
-
-  /// @notice Donate a single ETH donation
-  /// @param recipientAddress The address of the recipient of the donation
-  /// @param amount The amount of the donation
-  /// @param data The data of the donation
-  function donateETH(address recipientAddress, uint256 amount, bytes calldata data) external payable nonReentrant {
-    require(msg.value == amount, 'Incorrect ETH amount sent');
-    _handleETH(amount, recipientAddress, data);
   }
 
   /// @notice Donate a single ERC20 donation
@@ -137,57 +137,13 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   ) external nonReentrant validateInputLengths(recipientAddresses, amounts, data) {
     _checkERC20Allowance(tokenAddress, totalAmount, msg.sender);
     Allocations memory allocations = Allocations(tokenAddress, totalAmount, recipientAddresses, amounts, data);
-    require(allocations.tokenAddress != ETH_TOKEN_ADDRESS, 'Invalid token address');
+    if (allocations.tokenAddress == ETH_TOKEN_ADDRESS) revert InvalidInput();
 
     uint256 length = recipientAddresses.length;
     for (uint256 i = 0; i < length;) {
       _handleERC20(
         allocations.tokenAddress, allocations.amounts[i], allocations.recipientAddresses[i], allocations.data[i]
       );
-      unchecked {
-        ++i;
-      }
-    }
-  }
-
-  /// @notice Donate multiple ERC20 & ETH donations at once
-  /// @param tokenAddresses The addresses of the tokens being donated
-  /// @param amounts The amounts of the donation to each recipient
-  /// @param recipientAddresses The addresses of the recipients of the donation
-  /// @param data The data of the donation to each recipient
-  function donateManyMultipleTokens(
-    address[] calldata tokenAddresses,
-    uint256[] calldata amounts,
-    address[] calldata recipientAddresses,
-    bytes[] calldata data
-  ) external payable nonReentrant validateInputLengths(recipientAddresses, amounts, data) {
-    uint256 len = recipientAddresses.length;
-    if (len != tokenAddresses.length) revert InvalidInput();
-    uint256 totalETHNeeded = 0;
-
-    for (uint256 i = 0; i < len;) {
-      if (tokenAddresses[i] == ETH_TOKEN_ADDRESS) {
-        totalETHNeeded += amounts[i];
-      }
-      unchecked {
-        ++i;
-      }
-    }
-
-    require(msg.value == totalETHNeeded, 'Incorrect ETH amount sent');
-
-    for (uint256 i = 0; i < len;) {
-      address token = tokenAddresses[i];
-      uint256 amount = amounts[i];
-      address recipient = recipientAddresses[i];
-      bytes memory donationData = data[i];
-
-      if (token == ETH_TOKEN_ADDRESS) {
-        _handleETH(amount, recipient, donationData);
-      } else {
-        _checkERC20Allowance(token, amount, msg.sender);
-        _handleERC20(token, amount, recipient, donationData);
-      }
       unchecked {
         ++i;
       }
@@ -210,14 +166,13 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param amount The amount of the donation
   /// @param recipientAddress The address of the recipient of the donation
   function _handleERC20(address token, uint256 amount, address recipientAddress, bytes memory data) internal {
-    if (token == address(0) || recipientAddress == address(0)) revert InvalidInput();
-    if (amount == 0) revert InvalidInput();
+    if (token == ETH_TOKEN_ADDRESS || recipientAddress == ETH_TOKEN_ADDRESS || amount == 0) revert InvalidInput();
     bool success = IERC20(token).transferFrom(msg.sender, recipientAddress, amount);
     require(success, 'ERC20 transfer failed');
     emit DonationMade(recipientAddress, amount, token, data);
   }
 
   receive() external payable {
-    revert('Use allocateETH function to send ETH');
+    revert('Use donateETH function to send ETH');
   }
 }
