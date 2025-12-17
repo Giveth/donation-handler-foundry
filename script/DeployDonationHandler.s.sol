@@ -14,13 +14,14 @@ contract DeployDonationHandler is Script {
   address public constant polygonProxyAdmin = 0x7a5D2A00a25b95fd8739bc52Cd79f8F971C37Ca1;
 
   function run() external {
+    address deployer = vm.envAddress('PUBLIC_KEY');
     uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
 
     vm.startBroadcast(deployerPrivateKey);
 
     DonationHandler donationHandler = new DonationHandler();
 
-    ProxyAdmin proxyAdmin = new ProxyAdmin(msg.sender);
+    ProxyAdmin proxyAdmin = new ProxyAdmin(deployer);
     TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
       address(donationHandler), address(proxyAdmin), abi.encodeWithSelector(DonationHandler.initialize.selector)
     );
