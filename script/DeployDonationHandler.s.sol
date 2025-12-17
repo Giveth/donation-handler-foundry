@@ -21,14 +21,12 @@ contract DeployDonationHandler is Script {
 
     DonationHandler donationHandler = new DonationHandler();
 
-    ProxyAdmin proxyAdmin = new ProxyAdmin(deployer);
     TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-      address(donationHandler), address(proxyAdmin), abi.encodeWithSelector(DonationHandler.initialize.selector)
+      address(donationHandler), address(deployer), abi.encodeWithSelector(DonationHandler.initialize.selector)
     );
 
     vm.stopBroadcast();
     console.log('DonationHandler Implementation deployed to:', address(donationHandler));
-    console.log('ProxyAdmin deployed to:', address(proxyAdmin));
     console.log('TransparentUpgradeableProxy deployed to:', address(proxy));
   }
 }
