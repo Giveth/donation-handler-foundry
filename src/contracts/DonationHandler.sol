@@ -98,7 +98,16 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     require(allocations.tokenAddress == ETH_TOKEN_ADDRESS, 'Invalid token address for ETH');
     require(msg.value == allocations.totalAmount, 'Incorrect ETH amount sent');
 
+    uint256 sum;
     uint256 length = recipientAddresses.length;
+    for (uint256 i = 0; i < length;) {
+      sum += allocations.amounts[i];
+      unchecked {
+        ++i;
+      }
+    }
+    require(sum == allocations.totalAmount, 'Amounts do not match total');
+
     for (uint256 i = 0; i < length;) {
       _handleETH(allocations.amounts[i], allocations.recipientAddresses[i], allocations.data[i]);
       unchecked {
@@ -139,7 +148,16 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
     Allocations memory allocations = Allocations(tokenAddress, totalAmount, recipientAddresses, amounts, data);
     if (allocations.tokenAddress == ETH_TOKEN_ADDRESS) revert InvalidInput();
 
+    uint256 sum;
     uint256 length = recipientAddresses.length;
+    for (uint256 i = 0; i < length;) {
+      sum += allocations.amounts[i];
+      unchecked {
+        ++i;
+      }
+    }
+    require(sum == allocations.totalAmount, 'Amounts do not match total');
+
     for (uint256 i = 0; i < length;) {
       _handleERC20(
         allocations.tokenAddress, allocations.amounts[i], allocations.recipientAddresses[i], allocations.data[i]
