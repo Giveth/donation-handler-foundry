@@ -1,5 +1,7 @@
 # DonationHandler Smart Contract
 
+[![Tests](https://github.com/Giveth/donation-handler-foundry/actions/workflows/tests.yml/badge.svg)](https://github.com/Giveth/donation-handler-foundry/actions/workflows/tests.yml)
+
 A flexible and secure smart contract system for handling both ETH and ERC20 token donations with support for single and batch transactions.
 
 ## Overview
@@ -47,6 +49,9 @@ The contract includes comprehensive test coverage for:
 - Multiple ERC20 token donations
 - Error cases and edge conditions
 - Direct ETH transfer prevention
+- Amount validation and sum verification (security fix)
+
+All tests are automatically run on pull requests via GitHub Actions CI.
 
 ### Events
 

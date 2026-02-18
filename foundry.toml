@@ -25,6 +25,10 @@ out = 'out-via-ir'
 [profile.docs]
 src = 'src/interfaces/'
 
+[profile.ci]
+fuzz = { runs = 5000 }
+invariant = { runs = 1000 }
+
 [fuzz]
 runs = 1000
 
