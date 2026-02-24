@@ -21,6 +21,39 @@ Based on your deployments:
 - [ ] Gas costs acceptable (~1.5M gas per network)
 - [ ] Have sufficient ETH/native tokens on all networks
 
+## 🔄 Alternative: Deploy implementation only (not the ProxyAdmin owner)
+
+If you don't have access to the ProxyAdmin owner key, you can still deploy and verify the new implementation. The proxy owner then performs the upgrade on their side.
+
+### 1. Deploy and verify the implementation
+
+```bash
+source .env
+yarn deploy:implementation:mainnet
+# or for testnet first: yarn deploy:implementation:sepolia
+```
+
+The script will output the new implementation address. Save it (e.g. `export NEW_IMPLEMENTATION_ADDRESS=0x...`).
+
+### 2. Hand off to the proxy owner
+
+Send the **implementation address** to the ProxyAdmin owner. They should run:
+
+```solidity
+proxyAdmin.upgrade(proxy, NEW_IMPLEMENTATION_ADDRESS);
+```
+
+Or via `cast`:
+
+```bash
+cast send $PROXY_ADMIN_ADDRESS "upgrade(address,address)" $PROXY_ADDRESS $NEW_IMPLEMENTATION_ADDRESS \
+  --rpc-url $MAINNET_RPC --private-key $OWNER_PRIVATE_KEY
+```
+
+No need for you to have proxy or ProxyAdmin addresses in `.env` for this flow; only `PRIVATE_KEY` and RPC URL are required to deploy and verify the implementation.
+
+---
+
 ## 🔍 Step 1: Find Your Proxy Addresses
 
 Your proxy addresses are in the broadcast folder. Let's extract them:

@@ -19,6 +19,8 @@
     "upgrade:mainnet": "bash -c 'source .env && forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler --rpc-url $MAINNET_RPC --broadcast --verify -vvvv'",
     "upgrade:mainnet:simulate": "bash -c 'source .env && forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler --fork-url $MAINNET_RPC -vvvv'",
     "upgrade:sepolia": "bash -c 'source .env && forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler --rpc-url $SEPOLIA_RPC --broadcast --verify -vvvv'",
+    "deploy:implementation:mainnet": "bash -c 'source .env && forge script script/DeployDonationHandlerImplementation.s.sol:DeployDonationHandlerImplementation --rpc-url $MAINNET_RPC --broadcast --verify -vvvv'",
+    "deploy:implementation:sepolia": "bash -c 'source .env && forge script script/DeployDonationHandlerImplementation.s.sol:DeployDonationHandlerImplementation --rpc-url $SEPOLIA_RPC --broadcast --verify -vvvv'",
     "lint:check": "yarn lint:sol && forge fmt --check",
     "lint:fix": "sort-package-json && forge fmt && yarn lint:sol --fix",
     "lint:natspec": "npx @defi-wonderland/natspec-smells --config natspec-smells.config.js",
