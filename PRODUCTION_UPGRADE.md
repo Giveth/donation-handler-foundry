@@ -29,8 +29,10 @@ If you don't have access to the ProxyAdmin owner key, you can still deploy and v
 
 ```bash
 source .env
-yarn deploy:implementation:mainnet
-# or for testnet first: yarn deploy:implementation:sepolia
+yarn deploy:implementation mainnet   # Ethereum
+yarn deploy:implementation base     # Base
+yarn deploy:implementation sepolia # Testnet first
+# Add the chain name as the first argument. RPC must be set in .env as <CHAIN>_RPC (e.g. BASE_RPC).
 ```
 
 The script will output the new implementation address. Save it (e.g. `export NEW_IMPLEMENTATION_ADDRESS=0x...`).
