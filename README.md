@@ -256,7 +256,7 @@ export PROXY_ADMIN_ADDRESS="0xECE9bE2e4b0c9a2C9E305feA6Ead25d310477409"
 export MAINNET_RPC="your_rpc_url"
 
 # 2. Test on fork first (SAFE - no real transactions)
-yarn upgrade:mainnet:fork
+yarn upgrade:mainnet:simulate
 
 # 3. If tests pass, upgrade on mainnet
 yarn upgrade:mainnet
@@ -277,7 +277,7 @@ For other networks (Optimism, Gnosis, Polygon, Base, Celo), check your `broadcas
 yarn upgrade:mainnet
 
 # Test upgrade on fork before mainnet (recommended!)
-yarn upgrade:mainnet:fork
+yarn upgrade:mainnet:simulate
 ```
 
 ### 📝 Manual Upgrade Process
@@ -304,7 +304,7 @@ cast call $PROXY_ADDRESS "implementation()(address)" --rpc-url $MAINNET_RPC
 
 ### ⚠️ Important Notes
 
-- **Test on fork first** - Always run `yarn upgrade:mainnet:fork` before mainnet
+- **Test on fork first** - Always run `yarn upgrade:mainnet:simulate` before mainnet
 - **ProxyAdmin owner** - Ensure your account owns the ProxyAdmin contract
 - **Gas costs** - Expect ~1.45M gas (~0.05-0.1 ETH depending on gas prices)
 - **State preserved** - All existing data remains intact after upgrade

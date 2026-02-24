@@ -301,7 +301,7 @@ Once you've successfully tested on Sepolia:
 ### 2. Test on Mainnet Fork (Strongly Recommended)
 ```bash
 # Test upgrade on a mainnet fork before real deployment
-yarn upgrade:mainnet:fork
+yarn upgrade:mainnet:simulate
 ```
 
 This runs against mainnet state without sending real transactions - catches issues specific to mainnet.

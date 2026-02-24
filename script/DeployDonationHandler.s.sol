@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
+/// @notice Only run this script when you want a fresh deployment (new proxy + implementation).
+/// For upgrading an existing proxy, use UpgradeDonationHandler.s.sol instead.
+
 import {DonationHandler} from '../src/contracts/DonationHandler.sol';
 import {ProxyAdmin} from '@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol';
 import {TransparentUpgradeableProxy} from '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol';
@@ -33,7 +36,8 @@ contract DeployDonationHandler is Script {
     );
     console.log('Proxy deployed to:', address(proxy));
 
-    // Get ProxyAdmin address
+    // EIP-1967 standard slot for transparent proxy admin (OpenZeppelin uses this)
+    // https://eips.ethereum.org/EIPS/eip-1967#admin-address
     bytes32 adminSlot = bytes32(uint256(keccak256('eip1967.proxy.admin')) - 1);
     address proxyAdmin = address(uint160(uint256(vm.load(address(proxy), adminSlot))));
     console.log('ProxyAdmin deployed to:', proxyAdmin);

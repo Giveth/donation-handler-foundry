@@ -48,7 +48,7 @@ export PROXY_ADMIN_ADDRESS=0xECE9bE2e4b0c9a2C9E305feA6Ead25d310477409
 export MAINNET_RPC=your_mainnet_rpc_url
 
 # Test on fork (SAFE - no real transactions)
-yarn upgrade:mainnet:fork
+yarn upgrade:mainnet:simulate
 ```
 
 **Expected Output:**
