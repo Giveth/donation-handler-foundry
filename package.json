@@ -20,6 +20,8 @@
     "upgrade:mainnet:simulate": "bash -c 'source .env && forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler --fork-url $MAINNET_RPC -vvvv'",
     "upgrade:sepolia": "bash -c 'source .env && forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler --rpc-url $SEPOLIA_RPC --broadcast --verify -vvvv'",
     "deploy:implementation": "./scripts/deploy-implementation.sh",
+    "upgrade:generate-payload": "./scripts/generate-upgrade-payload.sh",
+    "upgrade:submit-to-safe": "bash -c 'source .env && node scripts/submit-upgrade-to-safe.mjs \"$@\"' bash",
     "lint:check": "yarn lint:sol && forge fmt --check",
     "lint:fix": "sort-package-json && forge fmt && yarn lint:sol --fix",
     "lint:natspec": "npx @defi-wonderland/natspec-smells --config natspec-smells.config.js",
@@ -38,6 +40,9 @@
     "package.json": "sort-package-json"
   },
   "devDependencies": {
+    "@safe-global/api-kit": "^4.0.0",
+    "@safe-global/protocol-kit": "^4.0.0",
+    "@safe-global/types-kit": "^4.0.0",
     "@commitlint/cli": "19.3.0",
     "@commitlint/config-conventional": "19.2.2",
     "@defi-wonderland/natspec-smells": "1.1.6",
@@ -46,6 +51,7 @@
     "husky": ">=9",
     "lint-staged": ">=10",
     "solhint-community": "4.0.1",
-    "sort-package-json": "2.10.0"
+    "sort-package-json": "2.10.0",
+    "ethers": "^6.13.0"
   }
 }
