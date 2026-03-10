@@ -4,6 +4,71 @@ This guide is for signers of the **ProxyAdmin** multisig. It explains how to run
 
 ---
 
+## Steps to propose the transaction
+
+Choose one of two ways: **A) Submit from your machine** (script posts to Safe) or **B) Generate payload** then create the tx in the Safe UI.
+
+### Parameters and inputs you need
+
+| Parameter | Where to set | Description |
+|-----------|----------------|--------------|
+| **SAFE_ADDRESS** | `.env` or CLI | The multisig Safe address (owner of ProxyAdmin). |
+| **PROXY_ADMIN_ADDRESS** | `.env` or CLI | The ProxyAdmin contract address. |
+| **PROXY_ADDRESS** | `.env` or CLI | The DonationHandler proxy to upgrade. |
+| **NEW_IMPLEMENTATION_ADDRESS** | `.env` or CLI | The new implementation contract address (from `yarn deploy:implementation <chain>`). |
+| **PROPOSER_PRIVATE_KEY** (or **PROPOSER_PK**) | `.env` only | Private key of a Safe **owner** (used only for **Option A**). |
+| **&lt;CHAIN&gt;_RPC** | `.env` | RPC URL for the chain, e.g. `BASE_RPC`, `MAINNET_RPC`. |
+| **CHAIN** | CLI argument or `.env` | Chain name: `mainnet`, `base`, `arbitrum`, `optimism`, `polygon`, `gnosis`, `celo`, `sepolia`. |
+| **SAFE_API_KEY** | `.env` (optional) | Safe API key if you hit rate limits. |
+
+---
+
+### Option A — Submit proposal from your machine (recommended if you have proposer key)
+
+1. **Set in `.env`:**
+   - `SAFE_ADDRESS` = your multisig address  
+   - `PROXY_ADMIN_ADDRESS` = ProxyAdmin contract  
+   - `PROXY_ADDRESS` = DonationHandler proxy  
+   - `NEW_IMPLEMENTATION_ADDRESS` = new implementation (from deploy)  
+   - `PROPOSER_PRIVATE_KEY` or `PROPOSER_PK` = private key of **one Safe owner**  
+   - `<CHAIN>_RPC` = RPC URL (e.g. `BASE_RPC`, `MAINNET_RPC`)
+
+2. **Run (from repo root):**
+   ```bash
+   yarn upgrade:submit-to-safe base
+   ```
+   Use the correct chain instead of `base` if needed (e.g. `mainnet`, `arbitrum`).
+
+3. The script will create the upgrade tx, sign it with the proposer key, and submit it to the Safe Transaction Service. Other signers see it in the Safe UI and can confirm/execute.
+
+---
+
+### Option B — Generate payload, then create the tx in Safe UI
+
+1. **Set in `.env` (or pass as CLI args):**
+   - `PROXY_ADMIN_ADDRESS`  
+   - `PROXY_ADDRESS`  
+   - `NEW_IMPLEMENTATION_ADDRESS`  
+   Optional: `SAFE_ADDRESS`, `CHAIN` (for the printed Safe link).
+
+2. **Generate the payload:**
+   ```bash
+   yarn upgrade:generate-payload 0x<ProxyAdmin> 0x<Proxy> 0x<NewImplementation>
+   # Or with env set: yarn upgrade:generate-payload
+   ```
+
+3. **Use the output:**
+   - Open the printed Safe link (or [app.safe.global](https://app.safe.global)).
+   - **New transaction** → **Contract interaction** (or **Apps** → **Transaction Builder**).
+   - **To:** paste `PROXY_ADMIN_ADDRESS`.
+   - **Data:** paste the hex **Data (calldata)** from the script output, or use the function `upgrade(address,address)` with `proxy` = `PROXY_ADDRESS` and `implementation` = `NEW_IMPLEMENTATION_ADDRESS`.
+   - **Value:** 0.
+   - **Create transaction** so other signers can sign and execute.
+
+   Alternatively, in Safe go to **Apps** → **Transaction Builder** → **Import** and select the generated `upgrade-payload.json`.
+
+---
+
 ## Proposing the transaction (for the proposer)
 
 If you have the three addresses (ProxyAdmin, proxy, new implementation), you can **generate** the exact transaction payload and a Safe Transaction Builder–ready JSON:
