@@ -28,10 +28,8 @@
     "test:symbolic": "halmos",
     "test:unit": "forge test --match-contract Unit -vvv",
     "test:unit:deep": "FOUNDRY_FUZZ_RUNS=5000 yarn test:unit",
+    "upgrade:direct": "./scripts/upgrade-direct.sh",
     "upgrade:generate-payload": "./scripts/generate-upgrade-payload.sh",
-    "upgrade:mainnet": "bash -c 'source .env && forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler --rpc-url $MAINNET_RPC --broadcast --verify -vvvv'",
-    "upgrade:mainnet:simulate": "bash -c 'source .env && forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler --fork-url $MAINNET_RPC -vvvv'",
-    "upgrade:sepolia": "bash -c 'source .env && forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler --rpc-url $SEPOLIA_RPC --broadcast --verify -vvvv'",
     "upgrade:submit-to-safe": "node scripts/submit-upgrade-to-safe.mjs"
   },
   "lint-staged": {
