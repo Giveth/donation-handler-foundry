@@ -241,6 +241,85 @@ The deployments are stored in ./broadcast
 
 See the [Foundry Book for available options](https://book.getfoundry.sh/reference/forge/forge-create.html).
 
+
+## Upgrading Existing Deployments
+
+The DonationHandler uses **TransparentUpgradeableProxy**, allowing you to upgrade the implementation without deploying a new proxy. Users continue using the same address.
+
+### 🎯 Quick Upgrade (Ethereum Mainnet)
+
+```bash
+# 1. Set up environment variables
+export PRIVATE_KEY="your_private_key"
+export PROXY_ADDRESS="0x97b2cb568e0880B99Cd16EFc6edFF5272Aa02676"
+export PROXY_ADMIN_ADDRESS="0xECE9bE2e4b0c9a2C9E305feA6Ead25d310477409"
+export MAINNET_RPC="your_rpc_url"
+
+# 2. Test on fork first (SAFE - no real transactions)
+yarn upgrade:mainnet:simulate
+
+# 3. If tests pass, upgrade on mainnet
+yarn upgrade:mainnet
+```
+
+### 📋 Deployed Addresses
+
+#### Ethereum Mainnet (Chain ID: 1)
+- **Proxy**: `0x97b2cb568e0880B99Cd16EFc6edFF5272Aa02676` (users interact with this)
+- **ProxyAdmin**: `0xECE9bE2e4b0c9a2C9E305feA6Ead25d310477409` (controls upgrades)
+
+For other networks (Optimism, Gnosis, Polygon, Base, Celo), check your `broadcast/` folder.
+
+### 🔧 Available Upgrade Scripts
+
+```bash
+# Upgrade on mainnet (requires PROXY_ADDRESS env var)
+yarn upgrade:mainnet
+
+# Test upgrade on fork before mainnet (recommended!)
+yarn upgrade:mainnet:simulate
+```
+
+### 📝 Manual Upgrade Process
+
+If you prefer manual control:
+
+```bash
+# Deploy new implementation and upgrade proxy
+forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler \
+    --rpc-url $MAINNET_RPC \
+    --broadcast \
+    --verify \
+    -vvvv
+```
+
+### ✅ Verify Upgrade
+
+After upgrading, verify the new implementation:
+
+```bash
+# Check current implementation address
+cast call $PROXY_ADDRESS "implementation()(address)" --rpc-url $MAINNET_RPC
+```
+
+### ⚠️ Important Notes
+
+- **Test on fork first** - Always run `yarn upgrade:mainnet:simulate` before mainnet
+- **ProxyAdmin owner** - Ensure your account owns the ProxyAdmin contract
+- **Gas costs** - Expect ~1.45M gas (~0.05-0.1 ETH depending on gas prices)
+- **State preserved** - All existing data remains intact after upgrade
+- **Same address** - Users continue using the same proxy address
+
+### 🔄 What the Upgrade Does
+
+The upgrade script:
+1. Deploys a new `DonationHandler` implementation with bug fixes
+2. Updates the proxy to point to the new implementation
+3. Preserves all existing state and data
+4. Maintains the same proxy address for users
+
+See `script/UpgradeDonationHandler.s.sol` and `script/TestUpgrade.s.sol` for implementation details.
+
 ## Export And Publish
 
 Export TypeScript interfaces from Solidity contracts and interfaces providing compatibility with TypeChain. Publish the exported packages to NPM.
