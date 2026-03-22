@@ -33,8 +33,9 @@ case "$CHAIN" in
   celo) SAFE_CHAIN_SLUG="celo" ;;
 esac
 
-# Build calldata: upgrade(address proxy, address implementation)
-CALLDATA=$(cast calldata "upgrade(address,address)" "$PROXY" "$NEW_IMPL")
+# Build calldata: upgradeAndCall(address proxy, address implementation, bytes data)
+# Use empty bytes so the upgrade only switches implementation and does not run initialize().
+CALLDATA=$(cast calldata "upgradeAndCall(address,address,bytes)" "$PROXY" "$NEW_IMPL" "0x")
 
 echo ""
 echo "=============================================="
@@ -45,9 +46,10 @@ echo "  To (Contract):  $PROXY_ADMIN"
 echo "  Value:          0"
 echo "  Data (calldata): $CALLDATA"
 echo ""
-echo "  Function: upgrade(address proxy, address implementation)"
+echo "  Function: upgradeAndCall(address proxy, address implementation, bytes data)"
 echo "    proxy:         $PROXY"
 echo "    implementation: $NEW_IMPL"
+echo "    data:          0x"
 echo ""
 echo "=============================================="
 echo "  How to propose in Safe"
@@ -61,9 +63,10 @@ else
 fi
 echo "  2. New transaction → Contract interaction"
 echo "  3. Contract address: $PROXY_ADMIN"
-echo "  4. Use ABI: upgrade(address,address) with:"
+echo "  4. Use ABI: upgradeAndCall(address,address,bytes) with:"
 echo "       proxy         = $PROXY"
 echo "       implementation = $NEW_IMPL"
+echo "       data          = 0x"
 echo "  5. Or paste Raw data (hex): $CALLDATA"
 echo "  6. Value: 0 → Create transaction"
 echo ""
@@ -76,7 +79,7 @@ cat > "$OUTPUT_JSON" << EOF
   "chainId": "$CHAIN",
   "meta": {
     "name": "DonationHandler upgrade",
-    "description": "ProxyAdmin.upgrade(proxy, implementation)"
+    "description": "ProxyAdmin.upgradeAndCall(proxy, implementation, 0x)"
   },
   "transactions": [
     {
@@ -86,14 +89,16 @@ cat > "$OUTPUT_JSON" << EOF
       "contractMethod": {
         "inputs": [
           { "name": "proxy", "type": "address" },
-          { "name": "implementation", "type": "address" }
+          { "name": "implementation", "type": "address" },
+          { "name": "data", "type": "bytes" }
         ],
-        "name": "upgrade",
+        "name": "upgradeAndCall",
         "payable": false
       },
       "contractInputsValues": {
         "proxy": "$PROXY",
-        "implementation": "$NEW_IMPL"
+        "implementation": "$NEW_IMPL",
+        "data": "0x"
       }
     }
   ]

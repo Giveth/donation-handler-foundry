@@ -20,7 +20,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { config } from 'dotenv';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(
+    import.meta.url));
 // override: true so .env wins over any MAINNET_RPC etc. already set in the shell (e.g. from another file)
 config({ path: path.join(__dirname, '..', '.env'), override: true });
 
@@ -30,8 +31,8 @@ import SafeApiKitModule from '@safe-global/api-kit';
 import { OperationType } from '@safe-global/types-kit';
 import { ethers } from 'ethers';
 
-const Safe = SafeModule?.default ?? SafeModule;
-const SafeApiKit = SafeApiKitModule?.default ?? SafeApiKitModule;
+const Safe = (SafeModule && SafeModule.default) ? SafeModule.default : SafeModule;
+const SafeApiKit = (SafeApiKitModule && SafeApiKitModule.default) ? SafeApiKitModule.default : SafeApiKitModule;
 
 const CHAIN_IDS = {
     mainnet: 1,
@@ -115,16 +116,19 @@ function main() {
     const proposerPk = getProposerPrivateKey();
     const proposerAddress = new ethers.Wallet(proposerPk).address;
 
-    const nonceRaw = process.argv[3] ?? process.env.SAFE_TX_NONCE;
+    const nonceRaw = process.argv[3] !== undefined ? process.argv[3] : process.env.SAFE_TX_NONCE;
     const nonce = nonceRaw != null && nonceRaw !== '' ? Number(nonceRaw) : undefined;
     if (nonceRaw != null && nonceRaw !== '' && (Number.isNaN(nonce) || nonce < 0 || !Number.isInteger(nonce))) {
         console.error('SAFE_TX_NONCE / nonce must be a non-negative integer.');
         process.exit(1);
     }
 
-    // Calldata: upgrade(address proxy, address implementation)
-    const iface = new ethers.Interface(['function upgrade(address proxy, address implementation)']);
-    const data = iface.encodeFunctionData('upgrade', [proxy, newImplementation]);
+    // Calldata: upgradeAndCall(address proxy, address implementation, bytes data)
+    // Use empty bytes so the upgrade only switches implementation and does not run initialize().
+    const iface = new ethers.Interface([
+        'function upgradeAndCall(address proxy, address implementation, bytes data)',
+    ]);
+    const data = iface.encodeFunctionData('upgradeAndCall', [proxy, newImplementation, '0x']);
 
     const safeTransactionData = {
         to: proxyAdmin,
@@ -135,20 +139,14 @@ function main() {
 
     (async() => {
         try {
-            // Safe SDK expects RPC URL string (HttpTransport) or EIP-1193 provider, not ethers Provider
             const protocolKit = await Safe.init({
                 provider: rpcUrl,
                 signer: proposerPk,
                 safeAddress,
             });
 
-            // GS013: Safe requires success || safeTxGas != 0 || gasPrice != 0. If we omit these,
-            // a reverted inner call causes the Safe to revert with GS013. Set safeTxGas so the
-            // Safe doesn't wrap the failure; use enough for Safe overhead + ProxyAdmin.upgrade.
-            const txOptions = {
-                safeTxGas: '500000',
-                gasPrice: '0',
-            };
+            const txOptions = {};
+
             if (nonce !== undefined) {
                 txOptions.nonce = nonce;
             }
@@ -186,13 +184,19 @@ function main() {
         } catch (err) {
             console.error('Propose failed:', err.message || err);
             // Log API response body when present (e.g. 422 Unprocessable Content)
-            const body = err?.response?.data ?? err?.data ?? err?.body;
+            const body = err && err.response && err.response.data ?
+                err.response.data :
+                err && err.data ?
+                err.data :
+                err && err.body ?
+                err.body :
+                undefined;
             if (body && typeof body === 'object') {
                 console.error('API response:', JSON.stringify(body, null, 2));
             } else if (body && typeof body === 'string') {
                 console.error('API response:', body);
             }
-            if (err?.message?.includes('Unprocessable') || err?.message?.includes('422')) {
+            if (err && err.message && (err.message.includes('Unprocessable') || err.message.includes('422'))) {
                 console.error('\nCommon causes: Safe at SAFE_ADDRESS may not exist on this chain, or proposer is not an owner of that Safe on this chain. Use the correct Safe address for Polygon.');
             }
             process.exit(1);

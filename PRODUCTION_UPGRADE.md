@@ -42,13 +42,17 @@ The script will output the new implementation address. Save it (e.g. `export NEW
 Send the **implementation address** to the ProxyAdmin owner. They should run:
 
 ```solidity
-proxyAdmin.upgrade(proxy, NEW_IMPLEMENTATION_ADDRESS);
+proxyAdmin.upgradeAndCall(proxy, NEW_IMPLEMENTATION_ADDRESS, '');
 ```
 
 Or via `cast`:
 
 ```bash
-cast send $PROXY_ADMIN_ADDRESS "upgrade(address,address)" $PROXY_ADDRESS $NEW_IMPLEMENTATION_ADDRESS \
+cast send $PROXY_ADMIN_ADDRESS \
+  "upgradeAndCall(address,address,bytes)" \
+  $PROXY_ADDRESS \
+  $NEW_IMPLEMENTATION_ADDRESS \
+  0x \
   --rpc-url $MAINNET_RPC --private-key $OWNER_PRIVATE_KEY
 ```
 

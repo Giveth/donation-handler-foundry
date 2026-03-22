@@ -15,6 +15,21 @@ Same env for both: `PROXY_ADDRESS`, `PROXY_ADMIN_ADDRESS`, `NEW_IMPLEMENTATION_A
 
 ---
 
+## Upgrade safety: do not call `initialize()` on upgrade
+
+The scripts in this repo **only** switch the proxy to the new implementation; they **do not** pass any calldata to run `initialize()` (or any other function) on the new implementation.
+
+- **Safe flow:** uses `ProxyAdmin.upgradeAndCall(proxy, implementation, '0x')` (empty data).
+- **Direct flow:** uses `ProxyAdmin.upgradeAndCall(proxy, implementation, '')` (empty data).
+
+**Why this matters (TransparentUpgradeableProxy + ProxyAdmin):**
+
+If you upgraded with `upgradeAndCall(proxy, implementation, initialize())`, the call path would be Safe → ProxyAdmin → proxy → `implementation.initialize()`. Inside `initialize()`, **`msg.sender` is the ProxyAdmin**, not the Safe. So `__Ownable_init(msg.sender)` would set **owner = ProxyAdmin**. That would leave the proxy in a bad state: the ProxyAdmin cannot call `onlyOwner` functions through the proxy (the transparent proxy blocks admin from implementation calls), and the Safe would no longer be the owner. In addition, if the proxy was already initialized, calling `initialize()` again would revert with `InvalidInitialization()`.
+
+**If the new implementation needs one-time setup or migration**, add a **new** function that uses `reinitializer(2)` (or the right version), pass the **intended owner explicitly** (e.g. your Safe address), and call it in a **separate** transaction after the upgrade — not as the upgrade payload. Do not rely on `msg.sender` for ownership in any upgrade-time call.
+
+---
+
 ## Direct upgrade (EOA owner)
 
 When the ProxyAdmin owner is your EOA (not a Safe) on that chain:
@@ -104,7 +119,7 @@ Choose one of two ways: **A) Submit from your machine** (script posts to Safe) o
    - Open the printed Safe link (or [app.safe.global](https://app.safe.global)).
    - **New transaction** → **Contract interaction** (or **Apps** → **Transaction Builder**).
    - **To:** paste `PROXY_ADMIN_ADDRESS`.
-   - **Data:** paste the hex **Data (calldata)** from the script output, or use the function `upgrade(address,address)` with `proxy` = `PROXY_ADDRESS` and `implementation` = `NEW_IMPLEMENTATION_ADDRESS`.
+   - **Data:** paste the hex **Data (calldata)** from the script output, or use the function `upgradeAndCall(address,address,bytes)` with `proxy` = `PROXY_ADDRESS`, `implementation` = `NEW_IMPLEMENTATION_ADDRESS`, and `data` = `0x`.
    - **Value:** 0.
    - **Create transaction** so other signers can sign and execute.
 
@@ -144,7 +159,7 @@ The script will create the upgrade transaction, sign it with the proposer key, a
 ## What you’re doing
 
 - The **DonationHandler** logic lives behind an upgradeable proxy.
-- You call **ProxyAdmin.upgrade(proxy, newImplementation)** (or `upgradeAndCall` with empty data) so the proxy points to the new implementation.
+- You call **ProxyAdmin.upgradeAndCall(proxy, newImplementation, '0x')** so the proxy points to the new implementation without running `initialize()`.
 - Only the ProxyAdmin **owner** can do this (multisig or EOA). The new implementation is deployed once with `yarn deploy:implementation <chain>`; the upgrade step only updates the proxy to use that address.
 
 ---
@@ -184,7 +199,7 @@ The script will create the upgrade transaction, sign it with the proposer key, a
 
 ---
 
-## If the Safe UI doesn’t show `upgrade`
+## If the Safe UI doesn’t show `upgradeAndCall`
 
 Use **Contract interaction** with **Custom data**:
 
@@ -192,17 +207,16 @@ Use **Contract interaction** with **Custom data**:
 - **Data (hex):** use the ABI-encoded call:
 
   ```text
-  upgrade(address,address)
+  upgradeAndCall(address,address,bytes)
   ```
 
   Encoded with:
-  - **Selector:** `0x99...` (first 4 bytes of `keccak256("upgrade(address,address)")`).  
-  You can get the exact calldata from a block explorer (e.g. Etherscan) by going to the ProxyAdmin contract → **Write** → **upgrade** and encoding the two addresses, or by using a small script/tool that encodes the call.
+  - Encode the call with `proxy`, `implementation`, and empty `data = 0x`.  
+  You can get the exact calldata from a block explorer (e.g. Etherscan) by going to the ProxyAdmin contract → **Write** → **upgradeAndCall** and encoding the values, or by using a small script/tool that encodes the call.
 
   Or use an online ABI encoder:
-  - Function: `upgrade(address proxy, address implementation)`
-  - Arguments: `[ <proxy address>, <new implementation address> ]`
-  - Prepend the 4-byte selector: `0x99...` (look up `upgrade(address,address)` selector).
+  - Function: `upgradeAndCall(address proxy, address implementation, bytes data)`
+  - Arguments: `[ <proxy address>, <new implementation address>, 0x ]`
 
 ---
 
