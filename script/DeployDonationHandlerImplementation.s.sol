@@ -3,7 +3,7 @@ pragma solidity ^0.8.22;
 
 /// @notice Deploys and verifies only the DonationHandler implementation (no proxy, no upgrade).
 /// Use this when you are not the ProxyAdmin owner: deploy + verify, then give the implementation
-/// address to the owner so they can call proxyAdmin.upgrade(proxy, implementationAddress).
+/// address to the owner so they can call proxyAdmin.upgradeAndCall(proxy, implementationAddress, '').
 
 import {DonationHandler} from '../src/contracts/DonationHandler.sol';
 import {Script} from 'forge-std/Script.sol';
@@ -24,7 +24,7 @@ contract DeployDonationHandlerImplementation is Script {
 
     console.log('\n=== Hand off to proxy owner ===');
     console.log('Give this address to the ProxyAdmin owner to run:');
-    console.log('  proxyAdmin.upgrade(proxy,', address(implementation), ')');
-    console.log('export NEW_IMPLEMENTATION_ADDRESS=', address(implementation));
+    console.log(string.concat('  proxyAdmin.upgradeAndCall(proxy, ', vm.toString(address(implementation)), ", '')"));
+    console.log(string.concat('export NEW_IMPLEMENTATION_ADDRESS=', vm.toString(address(implementation))));
   }
 }

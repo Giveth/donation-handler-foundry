@@ -19,7 +19,9 @@ if [[ "${2:-}" == "--simulate" ]]; then
 fi
 
 cd "$(dirname "$0")/.."
+set -a
 source .env
+set +a
 
 # Derive RPC env var from chain name: base -> BASE_RPC, mainnet -> MAINNET_RPC
 RPC_SUFFIX=$(echo "$CHAIN" | tr '[:lower:]' '[:upper:]' | tr '-' '_')

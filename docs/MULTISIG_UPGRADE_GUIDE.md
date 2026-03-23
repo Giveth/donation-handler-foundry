@@ -187,11 +187,12 @@ The script will create the upgrade transaction, sign it with the proposer key, a
 
 4. **Contract interaction:**  
    - Choose **Write contract** (or “Contract interaction”).
-   - Find the function **`upgrade`** (or add it as a custom call; see below).
+   - Find the function **`upgradeAndCall`** (or add it as a custom call; see below).
 
-5. **Function: `upgrade`**
+5. **Function: `upgradeAndCall`**
    - **Parameter 1 – `proxy` (address):** the **DonationHandler proxy** address.
    - **Parameter 2 – `implementation` (address):** the **new implementation** address.
+   - **Parameter 3 – `data` (bytes):** `0x`
 
 6. **Value:** leave as **0**.
 
@@ -204,19 +205,25 @@ The script will create the upgrade transaction, sign it with the proposer key, a
 Use **Contract interaction** with **Custom data**:
 
 - **To:** ProxyAdmin address  
-- **Data (hex):** use the ABI-encoded call:
+- **Data (hex):** generate the exact calldata from the repo, then paste it into Safe:
 
   ```text
   upgradeAndCall(address,address,bytes)
   ```
 
-  Encoded with:
-  - Encode the call with `proxy`, `implementation`, and empty `data = 0x`.  
-  You can get the exact calldata from a block explorer (e.g. Etherscan) by going to the ProxyAdmin contract → **Write** → **upgradeAndCall** and encoding the values, or by using a small script/tool that encodes the call.
+  Preferred:
+  ```bash
+  yarn upgrade:generate-payload <proxy_admin> <proxy> <new_implementation> [safe_address] [chain]
+  ```
 
-  Or use an online ABI encoder:
-  - Function: `upgradeAndCall(address proxy, address implementation, bytes data)`
-  - Arguments: `[ <proxy address>, <new implementation address>, 0x ]`
+  That script prints the full hex calldata to paste into the Safe UI.
+
+  Or run `cast` directly:
+  ```bash
+  cast calldata "upgradeAndCall(address,address,bytes)" <proxy> <new_implementation> 0x
+  ```
+
+  This outputs the exact calldata for `upgradeAndCall(proxy, implementation, 0x)`.
 
 ---
 

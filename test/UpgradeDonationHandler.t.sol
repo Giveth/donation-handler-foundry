@@ -7,7 +7,7 @@ import {
   ITransparentUpgradeableProxy,
   TransparentUpgradeableProxy
 } from '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol';
-import 'forge-std/Test.sol';
+import {Test} from 'forge-std/Test.sol';
 
 contract DonationHandlerUpgradeTest is Test {
   DonationHandler public donationHandler;

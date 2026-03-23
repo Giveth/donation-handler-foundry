@@ -215,14 +215,10 @@ Configure the `.env` variables and source them:
 source .env
 ```
 
-Import your private keys into Foundry's encrypted keystore:
+Set the deployer private key in your environment:
 
 ```bash
-cast wallet import $MAINNET_DEPLOYER_NAME --interactive
-```
-
-```bash
-cast wallet import $SEPOLIA_DEPLOYER_NAME --interactive
+export PRIVATE_KEY=0x...
 ```
 
 ### Sepolia
@@ -298,8 +294,11 @@ forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler \
 After upgrading, verify the new implementation:
 
 ```bash
-# Check current implementation address
-cast call $PROXY_ADDRESS "implementation()(address)" --rpc-url $MAINNET_RPC
+# TransparentUpgradeableProxy blocks non-admin callers from implementation(), so
+# read the EIP-1967 implementation slot directly instead.
+cast storage $PROXY_ADDRESS \
+  0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc \
+  --rpc-url $MAINNET_RPC | sed 's/^0x000000000000000000000000/0x/'
 ```
 
 ### ⚠️ Important Notes

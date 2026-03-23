@@ -132,8 +132,9 @@ Check the transaction on Etherscan to verify it succeeded.
 Before upgrading, save the current implementation address:
 
 ```bash
-# Get current implementation address
-OLD_IMPL=$(cast call $PROXY_ADDRESS "0x5c60da1b" --rpc-url $SEPOLIA_RPC)
+# TransparentUpgradeableProxy blocks non-admin callers from implementation(),
+# so read the EIP-1967 implementation slot directly.
+OLD_IMPL=$(cast storage $PROXY_ADDRESS 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc --rpc-url $SEPOLIA_RPC | sed 's/^0x000000000000000000000000/0x/')
 echo "Old Implementation: $OLD_IMPL"
 ```
 
@@ -156,7 +157,7 @@ yarn upgrade:sepolia
 === Upgrading DonationHandler ===
 Proxy Address: 0x...
 ProxyAdmin Address: 0x...
-New Implementation deployed to: 0x...
+New Implementation: 0x...
 Proxy upgraded successfully!
 ```
 
@@ -165,8 +166,8 @@ Proxy upgraded successfully!
 **Check 1: Implementation Address Changed**
 
 ```bash
-# Get new implementation address
-NEW_IMPL=$(cast call $PROXY_ADDRESS "0x5c60da1b" --rpc-url $SEPOLIA_RPC)
+# Get new implementation address from the EIP-1967 implementation slot
+NEW_IMPL=$(cast storage $PROXY_ADDRESS 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc --rpc-url $SEPOLIA_RPC | sed 's/^0x000000000000000000000000/0x/')
 echo "New Implementation: $NEW_IMPL"
 
 # Compare with old implementation from Step 8

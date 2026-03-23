@@ -139,24 +139,6 @@ function main() {
 
     (async() => {
         try {
-            const protocolKit = await Safe.init({
-                provider: rpcUrl,
-                signer: proposerPk,
-                safeAddress,
-            });
-
-            const txOptions = {};
-
-            if (nonce !== undefined) {
-                txOptions.nonce = nonce;
-            }
-            const safeTransaction = await protocolKit.createTransaction({
-                transactions: [safeTransactionData],
-                options: txOptions,
-            });
-            const safeTxHash = await protocolKit.getTransactionHash(safeTransaction);
-            const signature = await protocolKit.signHash(safeTxHash);
-
             const safeApiKey = (process.env.SAFE_API_KEY || '').trim();
             if (!safeApiKey) {
                 throw new Error(
@@ -168,6 +150,26 @@ function main() {
                 apiKey: safeApiKey,
             });
 
+            const protocolKit = await Safe.init({
+                provider: rpcUrl,
+                signer: proposerPk,
+                safeAddress,
+            });
+
+            const txOptions = {};
+
+            if (nonce !== undefined) {
+                txOptions.nonce = nonce;
+            } else {
+                txOptions.nonce = await apiKit.getNextNonce(safeAddress);
+            }
+            const safeTransaction = await protocolKit.createTransaction({
+                transactions: [safeTransactionData],
+                options: txOptions,
+            });
+            const safeTxHash = await protocolKit.getTransactionHash(safeTransaction);
+            const signature = await protocolKit.signHash(safeTxHash);
+
             await apiKit.proposeTransaction({
                 safeAddress,
                 safeTransactionData: safeTransaction.data,
@@ -178,7 +180,7 @@ function main() {
 
             const slug = SAFE_APP_CHAIN_SLUG[chain ? chain.toLowerCase() : 'mainnet'] || 'eth';
             console.log('Proposal submitted to Safe Transaction Service.');
-            if (nonce !== undefined) console.log('Nonce used:', nonce);
+            console.log('Nonce used:', txOptions.nonce);
             console.log('Safe tx hash:', safeTxHash);
             console.log('View in Safe:', `https://app.safe.global/transactions/queue?safe=${slug}:${safeAddress}`);
         } catch (err) {
@@ -197,7 +199,7 @@ function main() {
                 console.error('API response:', body);
             }
             if (err && err.message && (err.message.includes('Unprocessable') || err.message.includes('422'))) {
-                console.error('\nCommon causes: Safe at SAFE_ADDRESS may not exist on this chain, or proposer is not an owner of that Safe on this chain. Use the correct Safe address for Polygon.');
+                console.error(`\nCommon causes: Safe at SAFE_ADDRESS may not exist on ${chain}, or proposer is not an owner of that Safe on this chain. Double-check the Safe address and chain-specific config.`);
             }
             process.exit(1);
         }

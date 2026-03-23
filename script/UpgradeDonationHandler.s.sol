@@ -11,11 +11,13 @@ contract UpgradeDonationHandler is Script {
   /// Set PROXY_ADDRESS, PROXY_ADMIN_ADDRESS, NEW_IMPLEMENTATION_ADDRESS in .env (deploy impl via deploy:implementation first).
   function run() external {
     uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+    address deployer = vm.addr(deployerPrivateKey);
     address proxyAddress = vm.envAddress('PROXY_ADDRESS');
     address proxyAdminAddress = vm.envAddress('PROXY_ADMIN_ADDRESS');
     address newImplementation = vm.envAddress('NEW_IMPLEMENTATION_ADDRESS');
 
     console.log('=== Upgrading DonationHandler ===');
+    console.log('Deployer:', deployer);
     console.log('Proxy Address:', proxyAddress);
     console.log('ProxyAdmin Address:', proxyAdminAddress);
     console.log('New Implementation:', newImplementation);

@@ -95,7 +95,7 @@ yarn upgrade:mainnet:simulate
 ```
 
 **Expected Output:**
-```
+```text
 === Upgrading DonationHandler ===
 Proxy Address: 0x97b2cb568e0880B99Cd16EFc6edFF5272Aa02676
 ...
@@ -116,7 +116,9 @@ yarn upgrade:mainnet
 
 ```bash
 # Check implementation changed
-cast call $PROXY_ADDRESS "0x5c60da1b" --rpc-url $MAINNET_RPC
+cast storage $PROXY_ADDRESS \
+  0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc \
+  --rpc-url $MAINNET_RPC | sed 's/^0x000000000000000000000000/0x/'
 
 # Check on Etherscan
 # Go to: https://etherscan.io/address/0x97b2cb568e0880B99Cd16EFc6edFF5272Aa02676
@@ -185,6 +187,7 @@ export GNOSIS_RPC=https://rpc.gnosischain.com
 # Upgrade
 forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler \
   --rpc-url $GNOSIS_RPC \
+  --legacy \
   --broadcast \
   --verify \
   -vvvv
@@ -223,6 +226,7 @@ export CELO_RPC=https://forno.celo.org
 # Upgrade
 forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler \
   --rpc-url $CELO_RPC \
+  --legacy \
   --broadcast \
   --verify \
   -vvvv
@@ -257,7 +261,9 @@ For each network, verify:
 ### 1. Implementation Changed
 ```bash
 # Get new implementation
-cast call $PROXY_ADDRESS "0x5c60da1b" --rpc-url $RPC_URL
+cast storage $PROXY_ADDRESS \
+  0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc \
+  --rpc-url $RPC_URL | sed 's/^0x000000000000000000000000/0x/'
 # Should be different from before
 ```
 
@@ -277,14 +283,13 @@ cast send $PROXY_ADDRESS \
 ### 3. New Validation Works (Bug Fix Specific)
 ```bash
 # This should REVERT with "Amounts do not match total"
-cast send $PROXY_ADDRESS \
+cast call $PROXY_ADDRESS \
   "donateManyETH(uint256,address[],uint256[],bytes[])" \
   1000000000000000000 \
   "[0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb]" \
   "[800000000000000000]" \
   "[]" \
   --value 1ether \
-  --private-key $PRIVATE_KEY \
   --rpc-url $RPC_URL
 ```
 
