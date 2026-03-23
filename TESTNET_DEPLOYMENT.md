@@ -17,7 +17,7 @@ This guide walks you through deploying DonationHandler to Sepolia testnet and te
 
 1. **Get Sepolia ETH** (for gas fees)
    - Visit [Sepolia Faucet](https://sepoliafaucet.com/)
-   - Or [Alchemy Sepolia Faucet](https://sepoliafaucet.com/)
+   - Or [Alchemy Sepolia Faucet](https://www.alchemy.com/faucets/ethereum-sepolia)
    - You'll need ~0.05 ETH for deployment + upgrade
 
 2. **Get an Etherscan API Key** (for verification)

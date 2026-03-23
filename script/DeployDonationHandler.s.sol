@@ -43,7 +43,7 @@ contract DeployDonationHandler is Script {
     console.log('Proxy:', address(proxy));
     console.log('ProxyAdmin:', proxyAdmin);
     console.log('\n=== Save these for upgrading ===');
-    console.log('export PROXY_ADDRESS=', address(proxy));
-    console.log('export PROXY_ADMIN_ADDRESS=', proxyAdmin);
+    console.log(string.concat('export PROXY_ADDRESS=', vm.toString(address(proxy))));
+    console.log(string.concat('export PROXY_ADMIN_ADDRESS=', vm.toString(proxyAdmin)));
   }
 }
