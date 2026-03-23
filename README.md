@@ -318,7 +318,7 @@ The upgrade script:
 3. Preserves all existing state and data
 4. Maintains the same proxy address for users
 
-See `script/UpgradeDonationHandler.s.sol` and `script/TestUpgrade.s.sol` for implementation details.
+See `script/UpgradeDonationHandler.s.sol` and `test/UpgradeDonationHandler.t.sol` for implementation details.
 
 ## Export And Publish
 

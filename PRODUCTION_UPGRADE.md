@@ -6,7 +6,9 @@ This guide covers upgrading DonationHandler on all production networks.
 
 Based on your deployments:
 - ✅ Ethereum Mainnet (Chain ID: 1)
+- ✅ Arbitrum (Chain ID: 42161)
 - ✅ Optimism (Chain ID: 10)
+- ✅ Polygon (Chain ID: 137)
 - ✅ Gnosis (Chain ID: 100)
 - ✅ Base (Chain ID: 8453)
 - ✅ Celo (Chain ID: 42220)
@@ -70,7 +72,9 @@ ETHEREUM_PROXY=0x97b2cb568e0880B99Cd16EFc6edFF5272Aa02676
 ETHEREUM_PROXY_ADMIN=0xECE9bE2e4b0c9a2C9E305feA6Ead25d310477409
 
 # Check other networks in your broadcast folder:
+cat broadcast/DeployDonationHandler.s.sol/42161/run-latest.json | grep "contractAddress"  # Arbitrum
 cat broadcast/DeployDonationHandler.s.sol/10/run-latest.json | grep "contractAddress"  # Optimism
+cat broadcast/DeployDonationHandler.s.sol/137/run-latest.json | grep "contractAddress"  # Polygon
 cat broadcast/DeployDonationHandler.s.sol/100/run-latest.json | grep "contractAddress"  # Gnosis
 cat broadcast/DeployDonationHandler.s.sol/8453/run-latest.json | grep "contractAddress"  # Base
 cat broadcast/DeployDonationHandler.s.sol/42220/run-latest.json | grep "contractAddress"  # Celo
@@ -131,6 +135,25 @@ cast send $PROXY_ADDRESS \
 ## 🌐 Step 3: Upgrade Other Networks
 
 Once Ethereum mainnet is successful, upgrade other networks.
+
+### Arbitrum (Chain ID: 42161)
+
+```bash
+# Setup
+export PROXY_ADDRESS=YOUR_ARBITRUM_PROXY
+export PROXY_ADMIN_ADDRESS=YOUR_ARBITRUM_PROXY_ADMIN
+export ARBITRUM_RPC=your_arbitrum_rpc
+
+# Upgrade
+forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler \
+  --rpc-url $ARBITRUM_RPC \
+  --broadcast \
+  --verify \
+  -vvvv
+
+# Verify on Arbiscan
+# https://arbiscan.io/address/YOUR_PROXY
+```
 
 ### Optimism (Chain ID: 10)
 
@@ -206,6 +229,25 @@ forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler \
 
 # Verify on Celo Explorer
 # https://celoscan.io/address/YOUR_PROXY
+```
+
+### Polygon (Chain ID: 137)
+
+```bash
+# Setup
+export PROXY_ADDRESS=YOUR_POLYGON_PROXY
+export PROXY_ADMIN_ADDRESS=YOUR_POLYGON_PROXY_ADMIN
+export POLYGON_RPC=your_polygon_rpc
+
+# Upgrade
+forge script script/UpgradeDonationHandler.s.sol:UpgradeDonationHandler \
+  --rpc-url $POLYGON_RPC \
+  --broadcast \
+  --verify \
+  -vvvv
+
+# Verify on Polygonscan
+# https://polygonscan.com/address/YOUR_PROXY
 ```
 
 ## ✅ Step 4: Post-Upgrade Verification (All Networks)
