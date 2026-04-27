@@ -21,6 +21,22 @@ NEW_IMPL="${3:-${NEW_IMPLEMENTATION_ADDRESS:?}}"
 SAFE_ADDRESS="${4:-${SAFE_ADDRESS}}"
 CHAIN="${5:-${CHAIN:-mainnet}}"
 
+# Numeric chain ID for Safe Transaction Builder JSON (must not be the chain name string)
+case "$CHAIN" in
+  mainnet) CHAIN_ID_NUM=1 ;;
+  sepolia) CHAIN_ID_NUM=11155111 ;;
+  base) CHAIN_ID_NUM=8453 ;;
+  arbitrum) CHAIN_ID_NUM=42161 ;;
+  optimism) CHAIN_ID_NUM=10 ;;
+  polygon) CHAIN_ID_NUM=137 ;;
+  gnosis) CHAIN_ID_NUM=100 ;;
+  celo) CHAIN_ID_NUM=42220 ;;
+  *)
+    echo "Unknown chain name: $CHAIN (expected mainnet, sepolia, base, arbitrum, optimism, polygon, gnosis, celo)" >&2
+    exit 1
+    ;;
+esac
+
 # Normalize chain to Safe app slug (eth, base, arbitrum, etc.)
 SAFE_CHAIN_SLUG="$CHAIN"
 case "$CHAIN" in
@@ -76,7 +92,7 @@ OUTPUT_JSON="${MULTISIG_PROPOSAL_JSON:-./upgrade-payload.json}"
 cat > "$OUTPUT_JSON" << EOF
 {
   "version": "1.0",
-  "chainId": "$CHAIN",
+  "chainId": $CHAIN_ID_NUM,
   "meta": {
     "name": "DonationHandler upgrade",
     "description": "ProxyAdmin.upgradeAndCall(proxy, implementation, 0x)"
