@@ -24,6 +24,41 @@ contract FailingMockERC20 is ERC20 {
   }
 }
 
+contract NoReturnMockERC20 {
+  string public name = 'NoReturnToken';
+  string public symbol = 'NRT';
+  uint8 public decimals = 6;
+  uint256 public totalSupply = 1_000_000 * 10 ** 6;
+
+  mapping(address => uint256) public balanceOf;
+  mapping(address => mapping(address => uint256)) public allowance;
+
+  event Transfer(address indexed from, address indexed to, uint256 value);
+  event Approval(address indexed owner, address indexed spender, uint256 value);
+
+  constructor() {
+    balanceOf[msg.sender] = totalSupply;
+    emit Transfer(address(0), msg.sender, totalSupply);
+  }
+
+  function approve(address spender, uint256 value) external {
+    allowance[msg.sender][spender] = value;
+    emit Approval(msg.sender, spender, value);
+  }
+
+  function transferFrom(address from, address to, uint256 value) external {
+    require(to != address(0), 'Invalid recipient');
+    require(balanceOf[from] >= value, 'Insufficient balance');
+    require(allowance[from][msg.sender] >= value, 'Insufficient allowance');
+
+    allowance[from][msg.sender] -= value;
+    balanceOf[from] -= value;
+    balanceOf[to] += value;
+
+    emit Transfer(from, to, value);
+  }
+}
+
 contract DonationHandlerTest is Test {
   DonationHandler public donationHandler;
   MockERC20 public mockToken;
@@ -262,8 +297,21 @@ contract DonationHandlerTest is Test {
     uint256 amount = 100 * 10 ** 18;
     failingToken.approve(address(donationHandler), amount);
 
-    vm.expectRevert('ERC20 transfer failed');
+    vm.expectRevert();
     donationHandler.donateERC20(address(failingToken), recipient1, amount, data);
+  }
+
+  function test_WhenMakingERC20DonationWithNoReturnToken() external {
+    NoReturnMockERC20 noReturnToken = new NoReturnMockERC20();
+    uint256 donationAmount = 100 * 10 ** noReturnToken.decimals();
+    bytes memory data = '';
+
+    noReturnToken.approve(address(donationHandler), donationAmount);
+
+    _expectDonationEvent(recipient1, donationAmount, address(noReturnToken));
+    donationHandler.donateERC20(address(noReturnToken), recipient1, donationAmount, data);
+
+    assertEq(noReturnToken.balanceOf(recipient1), donationAmount);
   }
 
   function test_RevertWhen_InitializingTwice() external {
