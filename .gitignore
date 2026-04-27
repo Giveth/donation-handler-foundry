@@ -10,6 +10,8 @@ out-via-ir
 
 # Config files
 .env
+.env.local
+upgrade-payload.json
 
 # Avoid ignoring gitkeep
 !/**/.gitkeep
