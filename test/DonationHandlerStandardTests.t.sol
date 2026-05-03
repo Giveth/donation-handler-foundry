@@ -163,8 +163,21 @@ contract DonationHandlerStandardTests is DonationHandlerSetup {
     uint256 amount = 100 * 10 ** 18;
     failingToken.approve(address(donationHandler), amount);
 
-    vm.expectRevert('ERC20 transfer failed');
+    vm.expectRevert();
     donationHandler.donateERC20(address(failingToken), recipient1, amount, data);
+  }
+
+  function test_WhenMakingERC20DonationWithNoReturnToken() external {
+    NoReturnMockERC20 noReturnToken = new NoReturnMockERC20();
+    uint256 donationAmount = 100 * (10 ** uint256(noReturnToken.decimals()));
+    bytes memory data = '';
+
+    noReturnToken.approve(address(donationHandler), donationAmount);
+
+    _expectDonationEvent(recipient1, donationAmount, address(noReturnToken));
+    donationHandler.donateERC20(address(noReturnToken), recipient1, donationAmount, data);
+
+    assertEq(noReturnToken.balanceOf(recipient1), donationAmount);
   }
 
   function test_RevertWhen_InitializingTwice() external {

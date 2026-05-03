@@ -29,13 +29,31 @@ src = 'src/interfaces/'
 fuzz = { runs = 5000 }
 invariant = { runs = 1000 }
 
+# Use only for implementation deploy script: identical bytecode across chains for CREATE2.
+# Run: FOUNDRY_PROFILE=deterministic forge script ...
+[profile.deterministic]
+bytecode_hash = 'none'
+cbor_metadata = false
+
 [fuzz]
 runs = 1000
 
 [rpc_endpoints]
 mainnet = "${MAINNET_RPC}"
 sepolia = "${SEPOLIA_RPC}"
+base = "${BASE_RPC}"
+arbitrum = "${ARBITRUM_RPC}"
+gnosis = "${GNOSIS_RPC}"
+celo = "${CELO_RPC}"
+optimism = "${OPTIMISM_RPC}"
+polygon = "${POLYGON_RPC}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
+base = { key = "${ETHERSCAN_API_KEY}", url = 'https://api.basescan.org/api' }
+arbitrum = { key = "${ETHERSCAN_API_KEY}", url = 'https://api.arbiscan.io/api' }
+gnosis = { key = "${ETHERSCAN_API_KEY}", url = 'https://api.gnosisscan.io/api' }
+celo = { key = "${ETHERSCAN_API_KEY}", url = 'https://api.celoscan.io/api' }
+optimism = { key = "${ETHERSCAN_API_KEY}", url = 'https://api-optimistic.etherscan.io/api' }
+polygon = { key = "${ETHERSCAN_API_KEY}", url = 'https://api.polygonscan.com/api' }
