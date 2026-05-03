@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 
 import '../src/contracts/DonationHandler.sol';
 
-import './helpers/NoReturnMockERC20.sol';
-
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import 'forge-std/Test.sol';
