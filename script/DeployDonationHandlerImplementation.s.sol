@@ -23,6 +23,8 @@ contract DeployDonationHandlerImplementation is Script {
   function run() external {
     uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
 
+    require(address(CREATEX).code.length > 0, 'CreateX not deployed on this chain');
+
     bytes memory initCode = type(DonationHandler).creationCode;
     bytes32 initCodeHash = keccak256(initCode);
 

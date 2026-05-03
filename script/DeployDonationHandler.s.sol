@@ -2,7 +2,6 @@
 pragma solidity ^0.8.22;
 
 import {DonationHandler} from '../src/contracts/DonationHandler.sol';
-import {ProxyAdmin} from '@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol';
 import {TransparentUpgradeableProxy} from '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol';
 import {Script} from 'forge-std/Script.sol';
 import {console} from 'forge-std/console.sol';
@@ -16,6 +15,7 @@ contract DeployDonationHandler is Script {
   function run() external {
     address deployer = vm.envAddress('PUBLIC_KEY');
     uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+    require(vm.addr(deployerPrivateKey) == deployer, 'PUBLIC_KEY must match PRIVATE_KEY');
 
     vm.startBroadcast(deployerPrivateKey);
 

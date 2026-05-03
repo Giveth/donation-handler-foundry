@@ -4,8 +4,11 @@ pragma solidity ^0.8.0;
 import '../src/contracts/DonationHandler.sol';
 
 import './DonationHandlerSetup.t.sol';
+import './helpers/NoReturnMockERC20.sol';
+
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import 'forge-std/Test.sol';
 
 // Mock ERC20 token for testing
@@ -163,7 +166,7 @@ contract DonationHandlerStandardTests is DonationHandlerSetup {
     uint256 amount = 100 * 10 ** 18;
     failingToken.approve(address(donationHandler), amount);
 
-    vm.expectRevert();
+    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, address(failingToken)));
     donationHandler.donateERC20(address(failingToken), recipient1, amount, data);
   }
 

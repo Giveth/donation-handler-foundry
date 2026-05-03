@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import '../src/contracts/DonationHandler.sol';
 
+import './helpers/NoReturnMockERC20.sol';
+
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import 'forge-std/Test.sol';
@@ -21,41 +23,6 @@ contract FailingMockERC20 is ERC20 {
 
   function transferFrom(address, address, uint256) public pure override returns (bool) {
     return false;
-  }
-}
-
-contract NoReturnMockERC20 {
-  string public name = 'NoReturnToken';
-  string public symbol = 'NRT';
-  uint8 public decimals = 6;
-  uint256 public totalSupply = 1_000_000 * 10 ** 6;
-
-  mapping(address => uint256) public balanceOf;
-  mapping(address => mapping(address => uint256)) public allowance;
-
-  event Transfer(address indexed from, address indexed to, uint256 value);
-  event Approval(address indexed owner, address indexed spender, uint256 value);
-
-  constructor() {
-    balanceOf[msg.sender] = totalSupply;
-    emit Transfer(address(0), msg.sender, totalSupply);
-  }
-
-  function approve(address spender, uint256 value) external {
-    allowance[msg.sender][spender] = value;
-    emit Approval(msg.sender, spender, value);
-  }
-
-  function transferFrom(address from, address to, uint256 value) external {
-    require(to != address(0), 'Invalid recipient');
-    require(balanceOf[from] >= value, 'Insufficient balance');
-    require(allowance[from][msg.sender] >= value, 'Insufficient allowance');
-
-    allowance[from][msg.sender] -= value;
-    balanceOf[from] -= value;
-    balanceOf[to] += value;
-
-    emit Transfer(from, to, value);
   }
 }
 
