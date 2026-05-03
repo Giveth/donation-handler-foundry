@@ -3,7 +3,8 @@ set -e
 
 # Deploy DonationHandler implementation via CreateX CREATE2 (same address on each chain when init code matches).
 # Usage: ./scripts/deploy-implementation.sh <chain>
-# Requires .env: PRIVATE_KEY, <CHAIN>_RPC (e.g. BASE_RPC), ETHERSCAN_API_KEY for --verify
+# Requires .env: PRIVATE_KEY, <CHAIN>_RPC (e.g. BASE_RPC), ETHERSCAN_API_KEY for --verify.
+# Arbitrum/Polygon: ARBITRUM_RPC / POLYGON_RPC (foundry.toml); ARBITRUM / POLYGON_RPC_URL are accepted as fallbacks.
 #
 # Build uses FOUNDRY_PROFILE=deterministic — see foundry.toml (must match manual forge script runs).
 # Chain names match foundry.toml [rpc_endpoints] keys (mainnet, base, sepolia, ...).
@@ -17,16 +18,21 @@ CHAIN="${1:?Usage: deploy-implementation.sh <chain> (e.g. base, mainnet, sepolia
 cd "$(dirname "$0")/.."
 source .env
 
+# foundry.toml and this script expect ARBITRUM_RPC / POLYGON_RPC; support common alternate names.
+export ARBITRUM_RPC="${ARBITRUM_RPC:-${ARBITRUM:-}}"
+export POLYGON_RPC="${POLYGON_RPC:-${POLYGON_RPC_URL:-}}"
+
 RPC_SUFFIX=$(echo "$CHAIN" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
 RPC_VAR="${RPC_SUFFIX}_RPC"
+RPC_URL="${!RPC_VAR}"
 
-if [[ -z "${!RPC_VAR}" ]]; then
-  echo "Error: $RPC_VAR is not set in .env"
+if [[ -z "$RPC_URL" ]]; then
+  echo "Error: $RPC_VAR is not set in .env (for polygon, POLYGON_RPC or POLYGON_RPC_URL; for arbitrum, ARBITRUM_RPC or ARBITRUM)"
   exit 1
 fi
 
 CREATEX_ADDRESS="0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed"
-CREATEX_CODE=$(cast code "$CREATEX_ADDRESS" --rpc-url "${!RPC_VAR}" 2>/dev/null || true)
+CREATEX_CODE=$(cast code "$CREATEX_ADDRESS" --rpc-url "$RPC_URL" 2>/dev/null || true)
 if [[ -z "$CREATEX_CODE" || "$CREATEX_CODE" == "0x" ]]; then
   echo "Error: CreateX not deployed at $CREATEX_ADDRESS on this RPC (cast code returned empty)."
   exit 1
@@ -41,7 +47,7 @@ fi
 export FOUNDRY_PROFILE=deterministic
 
 forge script script/DeployDonationHandlerImplementation.s.sol:DeployDonationHandlerImplementation \
-  --rpc-url "${!RPC_VAR}" \
+  --rpc-url "$RPC_URL" \
   --broadcast \
   --verify \
   --chain "$CHAIN" \
