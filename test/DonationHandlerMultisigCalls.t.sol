@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 import '../src/contracts/DonationHandler.sol';
 
-import {DonationHandlerSetup, FailingMockERC20, MockERC20} from './DonationHandlerSetup.t.sol';
-import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import 'forge-std/Test.sol';
+import './DonationHandlerSetup.t.sol';
+import './mocks/FailingMockERC20.sol';
+import './mocks/MockERC20.sol';
 
-// Mock ERC20 token for testing
+import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import 'forge-std/Test.sol';
 
 contract DummyMultisig {
   address public owner;
@@ -28,7 +28,11 @@ contract DummyMultisig {
   }
 
   // Execute a call to the donation handler
-  function executeTransaction(address target, uint256 value, bytes memory data) external payable returns (bool success) {
+  function executeTransaction(
+    address target,
+    uint256 value,
+    bytes memory data
+  ) external payable returns (bool success) {
     require(msg.sender == owner, 'Not authorized');
 
     if (shouldRevert) {

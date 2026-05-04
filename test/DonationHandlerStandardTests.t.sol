@@ -4,14 +4,10 @@ pragma solidity ^0.8.0;
 import '../src/contracts/DonationHandler.sol';
 
 import './DonationHandlerSetup.t.sol';
-import './helpers/NoReturnMockERC20.sol';
+import './mocks/NoReturnMockERC20.sol';
 
-import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import 'forge-std/Test.sol';
-
-// Mock ERC20 token for testing
 
 contract DonationHandlerStandardTests is DonationHandlerSetup {
   function setUp() public {

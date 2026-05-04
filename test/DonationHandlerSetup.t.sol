@@ -3,26 +3,11 @@ pragma solidity ^0.8.0;
 
 import '../src/contracts/DonationHandler.sol';
 
+import './mocks/FailingMockERC20.sol';
+import './mocks/MockERC20.sol';
+
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import 'forge-std/Test.sol';
-
-// Mock ERC20 token for testing
-contract MockERC20 is ERC20 {
-  constructor() ERC20('MockToken', 'MTK') {
-    _mint(msg.sender, 1_000_000 * 10 ** 18);
-  }
-}
-
-contract FailingMockERC20 is ERC20 {
-  constructor() ERC20('FailingToken', 'FAIL') {
-    _mint(msg.sender, 1_000_000 * 10 ** 18);
-  }
-
-  function transferFrom(address, address, uint256) public pure override returns (bool) {
-    return false;
-  }
-}
 
 contract DonationHandlerSetup is Test {
   DonationHandler public donationHandler;
