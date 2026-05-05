@@ -3,26 +3,13 @@ pragma solidity ^0.8.0;
 
 import '../src/contracts/DonationHandler.sol';
 
+import './mocks/FailingMockERC20.sol';
+import './mocks/MockERC20.sol';
+import './mocks/NoReturnMockERC20.sol';
+
 import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import 'forge-std/Test.sol';
-
-// Mock ERC20 token for testing
-contract MockERC20 is ERC20 {
-  constructor() ERC20('MockToken', 'MTK') {
-    _mint(msg.sender, 1_000_000 * 10 ** 18);
-  }
-}
-
-contract FailingMockERC20 is ERC20 {
-  constructor() ERC20('FailingToken', 'FAIL') {
-    _mint(msg.sender, 1_000_000 * 10 ** 18);
-  }
-
-  function transferFrom(address, address, uint256) public pure override returns (bool) {
-    return false;
-  }
-}
 
 contract DonationHandlerTest is Test {
   DonationHandler public donationHandler;
@@ -262,8 +249,21 @@ contract DonationHandlerTest is Test {
     uint256 amount = 100 * 10 ** 18;
     failingToken.approve(address(donationHandler), amount);
 
-    vm.expectRevert('ERC20 transfer failed');
+    vm.expectRevert(abi.encodeWithSelector(SafeERC20.SafeERC20FailedOperation.selector, address(failingToken)));
     donationHandler.donateERC20(address(failingToken), recipient1, amount, data);
+  }
+
+  function test_WhenMakingERC20DonationWithNoReturnToken() external {
+    NoReturnMockERC20 noReturnToken = new NoReturnMockERC20();
+    uint256 donationAmount = 100 * (10 ** uint256(noReturnToken.decimals()));
+    bytes memory data = '';
+
+    noReturnToken.approve(address(donationHandler), donationAmount);
+
+    _expectDonationEvent(recipient1, donationAmount, address(noReturnToken));
+    donationHandler.donateERC20(address(noReturnToken), recipient1, donationAmount, data);
+
+    assertEq(noReturnToken.balanceOf(recipient1), donationAmount);
   }
 
   function test_RevertWhen_InitializingTwice() external {

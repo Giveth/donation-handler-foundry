@@ -5,8 +5,11 @@ import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 import '@openzeppelin/contracts/interfaces/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
+  using SafeERC20 for IERC20;
+
   address private constant ETH_TOKEN_ADDRESS = address(0);
 
   /// @notice Event emitted when a donation is made
@@ -185,8 +188,7 @@ contract DonationHandler is OwnableUpgradeable, ReentrancyGuardUpgradeable {
   /// @param recipientAddress The address of the recipient of the donation
   function _handleERC20(address token, uint256 amount, address recipientAddress, bytes memory data) internal {
     if (token == ETH_TOKEN_ADDRESS || recipientAddress == ETH_TOKEN_ADDRESS || amount == 0) revert InvalidInput();
-    bool success = IERC20(token).transferFrom(msg.sender, recipientAddress, amount);
-    require(success, 'ERC20 transfer failed');
+    IERC20(token).safeTransferFrom(msg.sender, recipientAddress, amount);
     emit DonationMade(recipientAddress, amount, token, data);
   }
 

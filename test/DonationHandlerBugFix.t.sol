@@ -2,16 +2,11 @@
 pragma solidity ^0.8.0;
 
 import '../src/contracts/DonationHandler.sol';
-import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import 'forge-std/Test.sol';
 
-// Mock ERC20 token for testing
-contract MockERC20 is ERC20 {
-  constructor() ERC20('MockToken', 'MTK') {
-    _mint(msg.sender, 1_000_000 * 10 ** 18);
-  }
-}
+import './mocks/MockERC20.sol';
+
+import '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import 'forge-std/Test.sol';
 
 /// @title DonationHandlerBugFixTest
 /// @notice Tests for the bug fix that ensures amounts array sums to totalAmount
@@ -45,7 +40,7 @@ contract DonationHandlerBugFixTest is Test {
     vm.deal(eve, 100 ether);
 
     // Give Alice some tokens
-    mockToken.transfer(alice, 10000e18);
+    mockToken.transfer(alice, 10_000e18);
   }
 
   /// @notice Test that donateManyETH reverts when amounts sum is less than totalAmount
@@ -203,14 +198,14 @@ contract DonationHandlerBugFixTest is Test {
     to[2] = alice;
     to[3] = makeAddr('charlie');
     to[4] = makeAddr('dave');
-    
+
     uint256[] memory amts = new uint256[](5);
     amts[0] = 1 ether;
     amts[1] = 2 ether;
     amts[2] = 3 ether;
     amts[3] = 2.5 ether;
     amts[4] = 1.5 ether; // Total = 10 ETH
-    
+
     bytes[] memory data = new bytes[](5);
 
     vm.prank(alice);
