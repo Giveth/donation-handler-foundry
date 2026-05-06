@@ -10,6 +10,7 @@ import {Script, console} from 'forge-std/Script.sol';
 
 interface ICreateX {
   function deployCreate2(bytes32 salt, bytes memory initCode) external payable returns (address deployed);
+  /// @dev Two-arg overload uses deployer = CreateX (`_SELF`). `salt` must match `_guard(userSalt)` used inside `deployCreate2`.
   function computeCreate2Address(bytes32 salt, bytes32 initCodeHash) external view returns (address computed);
 }
 
@@ -28,7 +29,9 @@ contract DeployDonationHandlerImplementation is Script {
     bytes memory initCode = type(DonationHandler).creationCode;
     bytes32 initCodeHash = keccak256(initCode);
 
-    address predicted = CREATEX.computeCreate2Address(IMPLEMENTATION_SALT, initCodeHash);
+    // CreateX `deployCreate2` hashes arbitrary salts via `_guard`; predict using the same guarded salt.
+    bytes32 guardedSalt = keccak256(abi.encode(IMPLEMENTATION_SALT));
+    address predicted = CREATEX.computeCreate2Address(guardedSalt, initCodeHash);
 
     console.log('=== CREATE2 DonationHandler implementation (CreateX) ===');
     console.log('Predicted address:', predicted);
