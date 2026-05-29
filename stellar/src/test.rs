@@ -1,4 +1,3 @@
-#![cfg(test)]
 extern crate std;
 
 use super::{DonationHandler, DonationHandlerClient, Error};
@@ -32,9 +31,9 @@ fn setup() -> Setup<'static> {
     let token_client = token::TokenClient::new(&env, &token);
     token_sac.mint(&donor, &1_000_000);
 
-    let contract_id = env.register(DonationHandler, ());
+    // Admin is set atomically by the constructor at registration/deploy time.
+    let contract_id = env.register(DonationHandler, (admin.clone(),));
     let client = DonationHandlerClient::new(&env, &contract_id);
-    client.initialize(&admin);
 
     Setup {
         env,
@@ -60,16 +59,9 @@ fn donation_events(s: &Setup) -> usize {
 }
 
 #[test]
-fn initialize_sets_admin() {
+fn constructor_sets_admin() {
     let s = setup();
     assert_eq!(s.client.admin(), s.admin);
-}
-
-#[test]
-fn initialize_twice_fails() {
-    let s = setup();
-    let other = Address::generate(&s.env);
-    assert_eq!(s.client.try_initialize(&other), Err(Ok(Error::AlreadyInitialized)));
 }
 
 #[test]
@@ -176,6 +168,32 @@ fn donate_many_empty_fails() {
             .try_donate_many(&s.donor, &s.token, &0, &recipients, &amounts, &data),
         Err(Ok(Error::InvalidInput))
     );
+}
+
+#[test]
+fn donate_many_reverts_atomically_on_insufficient_funds() {
+    // Donor holds 1_000_000. A batch totalling 1_200_000 must move *nothing*:
+    // the second transfer fails and the whole transaction rolls back.
+    let s = setup();
+    let r1 = Address::generate(&s.env);
+    let r2 = Address::generate(&s.env);
+    let recipients = vec![&s.env, r1.clone(), r2.clone()];
+    let amounts = vec![&s.env, 600_000i128, 600_000i128];
+    let data = vec![
+        &s.env,
+        Bytes::from_array(&s.env, &[1]),
+        Bytes::from_array(&s.env, &[2]),
+    ];
+
+    let res = s
+        .client
+        .try_donate_many(&s.donor, &s.token, &1_200_000, &recipients, &amounts, &data);
+    assert!(res.is_err());
+
+    // No partial donation: the first recipient must not have been paid.
+    assert_eq!(s.token_client.balance(&r1), 0);
+    assert_eq!(s.token_client.balance(&r2), 0);
+    assert_eq!(s.token_client.balance(&s.donor), 1_000_000);
 }
 
 #[test]

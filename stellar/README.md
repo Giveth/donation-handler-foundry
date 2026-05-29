@@ -37,7 +37,7 @@ and add a manual guard.
 ## Public interface
 
 ```rust
-fn initialize(admin: Address);                       // once; sets the admin (Ownable)
+fn __constructor(admin: Address);                    // runs at deploy; sets the admin (Ownable)
 fn donate(from, token, recipient, amount, data);     // single donation
 fn donate_many(from, token, total_amount,            // batch; sum(amounts) must == total_amount
                recipients, amounts, data);
@@ -77,12 +77,12 @@ stellar contract build              # -> target/wasm32v1-none/release/donation_h
 stellar keys generate deployer --network testnet --fund
 DEPLOYER=$(stellar keys address deployer)
 
+# The admin is set atomically by the constructor (the `-- --admin` args),
+# so there is no separate, front-runnable initialize step.
 stellar contract deploy \
   --wasm target/wasm32v1-none/release/donation_handler.wasm \
-  --source deployer --network testnet --alias donation_handler
-
-stellar contract invoke --id donation_handler --source deployer --network testnet \
-  -- initialize --admin "$DEPLOYER"
+  --source deployer --network testnet --alias donation_handler \
+  -- --admin "$DEPLOYER"
 ```
 
 Single donation of 1 XLM (native SAC), with a `projectId` payload:
@@ -108,13 +108,14 @@ stellar contract invoke --id donation_handler --source deployer --network testne
 | Field            | Value                                                        |
 | ---------------- | ------------------------------------------------------------ |
 | Network          | Test SDF Network ; September 2015                            |
-| Contract ID      | `CDBJL3AEFCA2ECOBUJ4G622Y63XGKX3UXBVVODM4PORVE3DT3PJ4VE4S`   |
-| WASM hash        | `f4652257bec0efb6f09f3ff5470c0b792dd29611f51b9b33c592fa044c87ea9a` |
+| Contract ID      | `CCAWXIU37ILOKXRPJVL56VJAVLJRKGNFSIXCAOLO3YFEDJV6DZRMJLAL`   |
+| WASM hash        | `a6509e7036715940040136f651e5a3e9520c02e47fbba7c3226c4a885717c4d3` |
 | Admin            | `GDKJHXJGKQXPRUWZCMSZM2QJAERFCMQJGLBREYLTVP4MYYBTQKM2DE7X`   |
-| Explorer         | https://stellar.expert/explorer/testnet/contract/CDBJL3AEFCA2ECOBUJ4G622Y63XGKX3UXBVVODM4PORVE3DT3PJ4VE4S |
+| Explorer         | https://stellar.expert/explorer/testnet/contract/CCAWXIU37ILOKXRPJVL56VJAVLJRKGNFSIXCAOLO3YFEDJV6DZRMJLAL |
 
-Verified on-chain: a single donation and a 2-recipient batch both transferred
-funds and emitted `DonationMade` with the `data` (projectId) payload intact.
+Verified on testnet: the admin is set by the constructor at deploy, and single
+and batch donations both transfer funds and emit `DonationMade` with the `data`
+(projectId) payload intact.
 
 > **Note:** This contract has not been audited. Do not deploy to mainnet without a
 > security review.

@@ -56,17 +56,17 @@ pub struct DonationMade {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    /// Contract has not been initialized with an admin yet.
+    /// Admin not set — instance storage missing or archived. With the
+    /// constructor this is effectively unreachable, but it is kept as a
+    /// defensive guard for the admin-gated functions.
     NotInitialized = 1,
-    /// `initialize` was called more than once.
-    AlreadyInitialized = 2,
     /// Array lengths mismatch, an empty batch, or a non-positive amount.
     /// (Equivalent to the EVM `InvalidInput` error.)
-    InvalidInput = 3,
+    InvalidInput = 2,
     /// `sum(amounts) != total_amount` (EVM: "Amounts do not match total").
-    AmountsMismatch = 4,
+    AmountsMismatch = 3,
     /// Arithmetic overflow while summing batch amounts.
-    Overflow = 5,
+    Overflow = 4,
 }
 
 #[contract]
@@ -74,14 +74,13 @@ pub struct DonationHandler;
 
 #[contractimpl]
 impl DonationHandler {
-    /// Initialize the contract with an `admin`. Mirrors the EVM
-    /// `initialize()` + `__Ownable_init`. Can only be called once.
-    pub fn initialize(env: Env, admin: Address) -> Result<(), Error> {
-        if env.storage().instance().has(&ADMIN) {
-            return Err(Error::AlreadyInitialized);
-        }
+    /// Constructor — runs atomically as part of contract deployment. Sets the
+    /// `admin` (the Ownable-equivalent owner). Running this at deploy time,
+    /// rather than via a separate `initialize` call, removes the front-running
+    /// window a two-step init would expose: otherwise an attacker could claim
+    /// `admin` — and therefore `upgrade` rights — before the deployer.
+    pub fn __constructor(env: Env, admin: Address) {
         env.storage().instance().set(&ADMIN, &admin);
-        Ok(())
     }
 
     /// Single donation.
@@ -139,11 +138,13 @@ impl DonationHandler {
             return Err(Error::AmountsMismatch);
         }
 
-        for i in 0..len {
-            // Safe: index < len, and the three vecs share the same length.
-            let recipient = recipients.get_unchecked(i);
-            let amount = amounts.get_unchecked(i);
-            let datum = data.get_unchecked(i);
+        // Execute every transfer, iterating the three equal-length vecs in
+        // lock-step (no index arithmetic). A failure in any transfer (e.g.
+        // insufficient balance) panics and reverts the whole transaction
+        // atomically — there are no partial donations.
+        for ((recipient, amount), datum) in
+            recipients.iter().zip(amounts.iter()).zip(data.iter())
+        {
             Self::handle_one(&env, &from, &token, &recipient, amount, &datum)?;
         }
         Ok(())
